@@ -1,9 +1,10 @@
 const { PrismaClient } = require('@prisma/client');
 
+const prisma = new PrismaClient({
+  log: ['query', 'error', 'warn']
+});
+
 async function main() {
-  const prisma = new PrismaClient({
-    log: ['query', 'error', 'warn']
-  });
   try {
     console.log('Connecting to database using DATABASE_URL...');
     const res = await prisma.$queryRaw`SELECT 1 as ok`;
