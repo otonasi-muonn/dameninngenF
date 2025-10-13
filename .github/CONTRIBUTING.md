@@ -43,7 +43,7 @@
 - `.env` はコミットしない（本リポジトリは `.env*` を ignore 済み）
 - Supabase 直結(5432)が通らない環境があるため、PgBouncer（pooler）経由を基本とする
 - Prisma の接続例:
-  - `?pgbouncer=true&connection_limit=1&sslmode=require`
+  - 例: `postgresql://USER:PASSWORD@HOST:5432/DBNAME?pgbouncer=true&connection_limit=1&sslmode=require`
 - スキーマ反映: `npx prisma db push`
 
 ## コードスタイル
