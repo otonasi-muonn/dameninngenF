@@ -13,7 +13,7 @@ datasource db {
 
 // Supabase Authと連携するためのUserモデル
 model User {
-  id       String    @id // Supabaseのauth.users.idと連携するため、@default(uuid())は削除
+  id       String    @id // @default(uuid()) was removed because the id will be provided externally by Supabase Auth (linked to auth.users.id)
   name     String?
   episodes Episode[]
   likes    Like[]
