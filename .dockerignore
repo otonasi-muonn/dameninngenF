@@ -1,0 +1,21 @@
+# Node / Next.js
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.next
+out
+.DS_Store
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Prisma artifacts (生成物はコピーしない)
+**/*.prisma/client/libquery_engine*
+**/*.prisma/client/*.node
+
+# VSCode
+.vscode

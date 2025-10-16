@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: dameninngen-app
+    ports:
+      - "3000:3000"
+    environment:
+      # .env の値を注入（compose 側で env_file を読むか、環境に設定）
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    volumes:
+      - .:/usr/src/app
+      # node_modules はホストと共有しない（コンテナ側を優先）
+      - /usr/src/app/node_modules
+    # DB も Docker 管理する場合は以下を有効化
+    # depends_on:
+    #   - db
+
+  # db:
+  #   image: postgres:15
+  #   container_name: dameninngen-db
+  #   restart: always
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: yourpassword
+  #     POSTGRES_DB: postgres
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+
+# volumes:
+#   postgres_data:
