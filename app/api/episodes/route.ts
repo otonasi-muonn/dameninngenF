@@ -35,3 +35,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to create episode' }, { status: 500 });
   }
 }
+
+export async function GET() {
+  try {
+    const episodes = await prisma.episode.findMany({
+      // 新しい投稿が上にくるように、作成日時で降順ソート
+      orderBy: {
+        created_at: 'desc',
+      },
+      // 投稿したユーザーの名前も一緒に取得する
+      include: {
+        user: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+    return NextResponse.json(episodes);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to fetch episodes' }, { status: 500 });
+  }
+}
