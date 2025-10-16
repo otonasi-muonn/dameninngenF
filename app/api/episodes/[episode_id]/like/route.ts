@@ -1,14 +1,14 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 
 // `params` を受け取ることで、URLの [episode_id] を取得できる
 export async function POST(
-  request: Request,
-  { params }: { params: { episode_id: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ episode_id: string }> }
 ) {
-  const episode_id = params.episode_id;
+  const { episode_id } = await params;
   const supabase = createRouteHandlerClient({ cookies });
 
   // ログインユーザーの情報を取得
