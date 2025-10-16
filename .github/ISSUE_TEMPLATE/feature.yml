@@ -1,0 +1,26 @@
+name: Feature request
+description: 機能追加や改善の提案
+labels: [feat]
+body:
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景 / 課題
+      description: 何が問題で、なぜ必要か
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受入基準
+      description: 完了の定義（テスト観点も含めて）
+      placeholder: |
+        - [ ] ユーザーはXできる
+        - [ ] ログにエラーが出ない
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: メモ / 参考情報
+      description: 関連リンクやスクリーンショットなど

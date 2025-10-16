@@ -1,0 +1,38 @@
+name: Bug report
+description: 不具合の報告
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: 不具合の内容
+      description: 何が起きたか
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 再現手順
+      description: 再現に必要な手順
+      placeholder: |
+        1. ...
+        2. ...
+        3. 観測結果 ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する挙動
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: 環境情報
+      description: OS / ブラウザ / バージョン 等
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ / スクリーンショット
+      description: 可能であれば添付
