@@ -65,6 +65,25 @@ export default function LoginPage() {
         </button>
       </form>
       {error && <p style={{ color: 'red' }}>{error}</p>}
+      
+      <div style={{ marginTop: '20px', textAlign: 'left' }}>
+        <p>アカウントをお持ちでない方は</p>
+        <button
+          type="button"
+          onClick={() => router.push('/register')}
+          style={{
+            backgroundColor: '#007bff',
+            color: 'white',
+            border: 'none',
+            padding: '10px 20px',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '14px'
+          }}
+        >
+          新規登録はこちら
+        </button>
+      </div>
     </div>
   );
 }
