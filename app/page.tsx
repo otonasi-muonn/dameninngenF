@@ -54,6 +54,12 @@ export default async function HomePage() {
   const { data: { session } } = await supabase.auth.getSession();
   const userId = session?.user?.id;
 
+  // ログインユーザーの情報を取得
+  const currentUser = userId ? await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true }
+  }) : null;
+
   // サーバーサイドでエピソード一覧とTDNを並行して取得
   const [episodes, tdn] = await Promise.all([
     prisma.episode.findMany({
@@ -90,18 +96,27 @@ export default async function HomePage() {
         ) : (
           <p>今日のダメ人間はまだいません。あなたが初代TDNになるチャンス！</p>
         )}
+        <div style={{ marginTop: '15px' }}>
+          <Link href="/tdn" style={{ color: '#b8860b', textDecoration: 'underline' }}>
+            詳細を見る
+          </Link>
+        </div>
       </div>
 
       {/* ログイン状態による表示切り替え */}
       {session ? (
         <div>
-          <p>ようこそ、{session.user.email} さん</p>
-          <form action="/api/auth/logout" method="post" style={{ display: 'inline', marginLeft: '20px' }}>
+          <p>ようこそ、{currentUser?.name || session.user.email} さん</p>
+          <form action="/login" method="post" style={{ display: 'inline', marginLeft: '20px' }}>
             <button type="submit" style={{ background: '#dc3545', color: '#fff', border: 'none', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer' }}>
               ログアウト
             </button>
           </form>
-          <PostForm />
+          <div style={{ marginTop: '20px' }}>
+            <Link href="/episodes" style={{ color: 'blue', textDecoration: 'underline' }}>
+              エピソードを投稿する
+            </Link>
+          </div>
         </div>
       ) : (
         <div>
