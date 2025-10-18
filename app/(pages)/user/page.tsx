@@ -17,7 +17,7 @@ export default async function AllUserPage() {
   const usersWithFollowStatus = await Promise.all(
     users.map(async (u) => {
       const { data: followData } = await supabase
-        .from('follow')
+        .from('Follow')
         .select('id')
         .eq('follower_id', userId)
         .eq('followed_id', u.id)

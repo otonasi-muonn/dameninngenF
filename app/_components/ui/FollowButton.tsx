@@ -14,13 +14,20 @@ export default function FollowButton({ userId, isInitiallyFollowing }: Props) {
   const supabase = createClientComponentClient();
 
   const handleFollow = async () => {
-    if (isFollowing || loading) return;
+    if (isFollowing || loading) return; // ← すでにフォロー済みなら何もしない
 
     setLoading(true);
 
+    const currentUser = (await supabase.auth.getUser()).data.user;
+    if (!currentUser) {
+      console.error('ログインユーザーが取得できません');
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.from('Follow').insert([
       {
-        follower_id: (await supabase.auth.getUser()).data.user?.id,
+        follower_id: currentUser.id,
         followed_id: userId,
       },
     ]);
