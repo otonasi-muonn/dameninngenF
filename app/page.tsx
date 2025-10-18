@@ -130,12 +130,6 @@ export default async function HomePage() {
             )}
           </div>
         ))}
-        
-      {/*ユーザー一覧にとぶ*/}
-       <div>
-        <p>↓フォローする人を探そう！</p>
-       <Link href="/alluser" style={{ color: 'blue' }}>ユーザー一覧ページへ</Link>
-       </div>
       </div>
     </div>
   );
