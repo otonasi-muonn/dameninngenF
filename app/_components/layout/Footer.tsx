@@ -10,7 +10,7 @@ export function Footer() {
     { href: '/', icon: '🏠', label: 'ホーム' },
     { href: '/episodes', icon: '📝', label: '投稿' },
     { href: '/tdn', icon: '👑', label: 'TDN' },
-    { href: '/mypage', icon: '👤', label: 'ユーザ一覧' },
+    { href: '/user', icon: '👤', label: 'ユーザー' },
     { href: '/profile', icon: '🔑', label: 'プロフィール' },
   ];
 
