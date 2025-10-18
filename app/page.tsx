@@ -1,84 +1,86 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
-import PostForm from './_components/ui/PostForm';
 import LikeButton from './_components/ui/LikeButton';
 
-// TDNのデータを取得する関数
-async function getTdn() {
-  try {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const topLikes = await prisma.like.groupBy({
-      by: ['episode_id'],
-      where: {
-        created_at: { gte: twentyFourHoursAgo },
-      },
-      _count: { episode_id: true },
-      orderBy: { _count: { episode_id: 'desc' } },
-      take: 1,
-    });
+type Episode = {
+  id: string;
+  content: string;
+  created_at: Date;
+  user: { name: string } | null;
+  _count: { likes: number };
+  likes: { user_id: string }[];
+};
 
-    if (topLikes.length === 0) {
-      // 24時間以内のいいねがない場合、全ての期間でトップの投稿を探す
-      const allTimeTop = await prisma.episode.findFirst({
-        orderBy: {
-          likes: {
-            _count: 'desc',
-          },
-        },
-        include: {
-          user: { select: { name: true } },
-          _count: { select: { likes: true } },
-        },
-      });
-      return allTimeTop;
+type TDN = {
+  id: string;
+  content: string;
+  user: { name: string } | null;
+  _count: { likes: number };
+} | null;
+
+type User = {
+  name: string;
+} | null;
+
+export default function HomePage() {
+  const [episodes, setEpisodes] = useState<Episode[]>([]);
+  const [tdn, setTdn] = useState<TDN>(null);
+  const [session, setSession] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<User>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  const supabase = createClientComponentClient();
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        // セッション情報を取得
+        const { data: { session: userSession } } = await supabase.auth.getSession();
+        setSession(userSession);
+
+        // データを並行して取得
+        const [episodesRes, tdnRes, userRes] = await Promise.all([
+          fetch('/api/episodes?limit=100').then(r => r.json()),
+          fetch('/api/tdn').then(r => r.json()),
+          userSession ? fetch('/api/user').then(r => r.json()) : Promise.resolve(null)
+        ]);
+
+        // /api/episodesのレスポンス形式を変換
+        const episodesData = (episodesRes.items || []).map((item: any) => ({
+          id: item.id,
+          content: item.content,
+          created_at: item.created_at,
+          user: item.user_name ? { name: item.user_name } : null,
+          _count: { likes: item.likes },
+          likes: item.likedByMe ? [{ user_id: userSession?.user?.id }] : []
+        }));
+
+        setEpisodes(episodesData);
+        // /api/tdnはエピソードオブジェクトを直接返すか、404を返す
+        setTdn(tdnRes && !tdnRes.message ? tdnRes : null);
+        setCurrentUser(userRes?.user || null);
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      } finally {
+        setLoading(false);
+      }
     }
 
-    const tdnEpisode = await prisma.episode.findUnique({
-      where: { id: topLikes[0].episode_id },
-      include: {
-        user: { select: { name: true } },
-        _count: { select: { likes: true } },
-      },
-    });
-    return tdnEpisode;
-  } catch (error) {
-    console.error('Failed to fetch TDN:', error);
-    return null;
+    loadData();
+  }, []);
+
+  // 検索クエリでフィルタリング
+  const filteredEpisodes = episodes.filter((episode) =>
+    episode.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) {
+    return <div>読み込み中...</div>;
   }
-}
-
-export default async function HomePage() {
-  const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
-
-  // ログインユーザーの情報を取得
-  const currentUser = userId ? await prisma.user.findUnique({
-    where: { id: userId },
-    select: { name: true }
-  }) : null;
-
-  // サーバーサイドでエピソード一覧とTDNを並行して取得
-  const [episodes, tdn] = await Promise.all([
-    prisma.episode.findMany({
-      orderBy: { created_at: 'desc' },
-      include: {
-        user: {
-          select: { name: true },
-        },
-        _count: {
-          select: { likes: true },
-        },
-        likes: {
-          where: { user_id: userId || '' },
-          select: { user_id: true },
-        },
-      },
-    }),
-    getTdn(),
-  ]);
 
   return (
     <div>
@@ -128,23 +130,52 @@ export default async function HomePage() {
       {/* エピソード一覧 */}
       <div style={{ marginTop: '40px' }}>
         <h2>みんなのダメ人間エピソード</h2>
-        {episodes.map((episode) => (
-          <div key={episode.id} style={{ border: '1px solid #ccc', padding: '10px', marginTop: '10px' }}>
-            <p>{episode.content}</p>
-            <small>
-              投稿者: {episode.user?.name || '名無しさん'} - {new Date(episode.created_at).toLocaleString()}
-            </small>
-            
-            {/* ログインしている時だけいいねボタンを表示 */}
-            {session && (
-              <LikeButton
-                episodeId={episode.id}
-                initialLikes={episode._count.likes}
-                isInitiallyLiked={episode.likes.length > 0}
-              />
-            )}
-          </div>
-        ))}
+
+        {/* 検索ボックス */}
+        <div style={{ marginTop: '20px', marginBottom: '20px' }}>
+          <input
+            type="text"
+            placeholder="エピソードを検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              maxWidth: '500px',
+              padding: '10px',
+              fontSize: '16px',
+              border: '2px solid #ccc',
+              borderRadius: '4px',
+            }}
+          />
+          {searchQuery && (
+            <p style={{ marginTop: '10px', color: '#666' }}>
+              {filteredEpisodes.length}件のエピソードが見つかりました
+            </p>
+          )}
+        </div>
+
+        {/* エピソード一覧 */}
+        {filteredEpisodes.length > 0 ? (
+          filteredEpisodes.map((episode) => (
+            <div key={episode.id} style={{ border: '1px solid #ccc', padding: '10px', marginTop: '10px' }}>
+              <p>{episode.content}</p>
+              <small>
+                投稿者: {episode.user?.name || '名無しさん'} - {new Date(episode.created_at).toLocaleString()}
+              </small>
+
+              {/* ログインしている時だけいいねボタンを表示 */}
+              {session && (
+                <LikeButton
+                  episodeId={episode.id}
+                  initialLikes={episode._count.likes}
+                  isInitiallyLiked={episode.likes.length > 0}
+                />
+              )}
+            </div>
+          ))
+        ) : (
+          <p>該当するエピソードが見つかりませんでした。</p>
+        )}
       </div>
     </div>
   );
