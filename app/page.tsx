@@ -96,7 +96,7 @@ export default async function HomePage() {
       {session ? (
         <div>
           <p>ようこそ、{session.user.email} さん</p>
-          <form action="/login" method="post" style={{ display: 'inline', marginLeft: '20px' }}>
+          <form action="/api/auth/logout" method="post" style={{ display: 'inline', marginLeft: '20px' }}>
             <button type="submit" style={{ background: '#dc3545', color: '#fff', border: 'none', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer' }}>
               ログアウト
             </button>
