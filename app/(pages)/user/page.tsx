@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase'
 
 export default async function UserPage() {
-  // いくつかの候補テーブル名を順に試して user_name を取得（デバッグ目的）
-  const candidates = ['user', 'users', 'profiles', 'accounts', 'members'];
+  // いくつかの候補テーブル名を順に試して name を取得（デバッグ目的）
+  const candidates = ['User'];
   let users: any[] = [];
   let error: any = null;
   let usedTable: string | null = null;
@@ -11,6 +11,7 @@ export default async function UserPage() {
   for (const t of candidates) {
     try {
       const res = await supabase.from(t).select('id, name');
+      console.log (res.error);
       if (!res.error) {
         users = res.data ?? [];
         usedTable = t;
@@ -57,7 +58,7 @@ export default async function UserPage() {
           <p>ユーザーが見つかりません。</p>
         ) : (
           <ul className="space-y-2">
-            {users.map((u) => (
+            {users.map((u: any) => (
               <li key={u.id ?? u.name} className="border p-2 rounded">
                 {u.name}
               </li>
