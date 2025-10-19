@@ -7,8 +7,8 @@ import LikeButton from '@/components/ui/LikeButton';
 
 export default async function EpisodesPage() {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   // ログインユーザーの情報を取得
   const currentUser = userId ? await prisma.user.findUnique({
@@ -31,9 +31,9 @@ export default async function EpisodesPage() {
     <div style={{ padding: 16 }}>
       <h1>ダメ人間エピソード投稿</h1>
 
-      {session ? (
+      {user ? (
         <div>
-          <p>投稿者: {currentUser?.name || session.user.email}</p>
+          <p>投稿者: {currentUser?.name || user.email}</p>
           <PostForm />
         </div>
       ) : (
@@ -46,7 +46,7 @@ export default async function EpisodesPage() {
       )}
 
       {/* 自分の投稿一覧 */}
-      {session && (
+      {user && (
         <div style={{ marginTop: 40 }}>
           <h2>あなたの投稿</h2>
           {myEpisodes.length > 0 ? (

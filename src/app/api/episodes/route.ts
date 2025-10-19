@@ -6,9 +6,9 @@ import { prisma } from '@/lib/prisma';
 // POST /api/episodes — create new episode (auth required)
 export async function POST(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user){
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const created = await prisma.episode.create({
-      data: { content, user_id: session.user.id },
+      data: { content, user_id: user.id },
       select: { id: true, content: true, created_at: true, user_id: true },
     });
     return NextResponse.json(created, { status: 201 });
@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
 
     // Optional user for likedByMe
     const supabase = createRouteHandlerClient({ cookies });
-    const { data: { session } } = await supabase.auth.getSession();
-    const me = session?.user?.id ?? null;
+    const { data: { user } } = await supabase.auth.getUser();
+    const me = user?.id ?? null;
 
     const [rows, total] = await Promise.all([
       prisma.episode.findMany({

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import LikeButton from './LikeButton';
+import { formatUtcDateTime } from '@/utils/date';
 
 type Episode = {
   id: string;
@@ -58,7 +59,7 @@ export default function EpisodeSearchList({ episodes, isLoggedIn }: Props) {
           <div key={episode.id} style={{ border: '1px solid #ccc', padding: '10px', marginTop: '10px' }}>
             <p>{episode.content}</p>
             <small>
-              投稿者: {episode.user?.name || '名無しさん'} - {new Date(episode.created_at).toLocaleString()}
+              投稿者: {episode.user?.name || '名無しさん'} - {formatUtcDateTime(episode.created_at)}
             </small>
             
             {/* ログインしている時だけいいねボタンを表示 */}

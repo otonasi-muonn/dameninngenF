@@ -7,18 +7,18 @@ import { prisma } from '@/lib/prisma';
 export async function GET() {
   try {
     const supabase = createRouteHandlerClient({ cookies });
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!session) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
       select: { name: true }
     });
 
-    return NextResponse.json({ user });
+    return NextResponse.json({ user: dbUser });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
