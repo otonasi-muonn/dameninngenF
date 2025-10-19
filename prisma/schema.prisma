@@ -9,12 +9,23 @@ datasource db {
 }
 
 model User {
-  id                              String    @id
-  name                            String?
-  episodes                        Episode[]
-  Follow_Follow_followed_idToUser Follow[]  @relation("Follow_followed_idToUser")
-  Follow_Follow_follower_idToUser Follow[]  @relation("Follow_follower_idToUser")
-  likes                           Like[]
+  id         String    @id
+  name       String?
+  // --まなさんの変更点を統合 ---
+  bio        String?   @db.Text    // 自己紹介
+  birthday   DateTime?             // 誕生日
+  avatar_url String?               // アイコンURL
+  // --------------------------
+
+  episodes   Episode[]
+  likes      Like[]
+
+  // ---高橋のリレーション定義 ---
+  // ↓ フォローしているユーザー (自分がフォロワー)
+  following  Follow[]  @relation("Following")
+  // ↓ フォローされているユーザー (自分がフォロー対象)
+  followedBy Follow[]  @relation("FollowedBy")
+  // ----------------------------------------
 }
 
 model Episode {
@@ -39,11 +50,16 @@ model Like {
   @@index([created_at, episode_id])
 }
 
+// ---高橋さんのFollowモデル ---
 model Follow {
-  id                            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  follower_id                   String    @default(dbgenerated("gen_random_uuid()"))
-  followed_id                   String?   @default(dbgenerated("gen_random_uuid()"))
-  created_at                    DateTime? @default(now()) @db.Timestamp(6)
-  User_Follow_followed_idToUser User?     @relation("Follow_followed_idToUser", fields: [followed_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_followed")
-  User_Follow_follower_idToUser User      @relation("Follow_follower_idToUser", fields: [follower_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_follower")
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  // リレーションの定義
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
+
+  // 複合主キーで、同じユーザーを二度フォローできないようにする
+  @@id([followerId, followingId])
 }

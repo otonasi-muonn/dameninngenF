@@ -1,66 +1,47 @@
-'use client'; // このコンポーネントはクライアント側で動作する
+'use client';
 
 import { useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-// 親コンポーネントから渡される props の型定義
 type Props = {
-  userId: string; // 表示対象ユーザーのID
-  isInitiallyFollowing: boolean; // 初期状態でフォロー済みかどうか
+  userId: string;
+  isInitiallyFollowing: boolean;
 };
 
 export default function FollowButton({ userId, isInitiallyFollowing }: Props) {
-  // フォロー状態とローディング状態を管理
   const [isFollowing, setIsFollowing] = useState(isInitiallyFollowing);
   const [loading, setLoading] = useState(false);
-  const supabase = createClientComponentClient(); // Supabase クライアントを生成
 
-  // フォローボタンを押したときの処理（フォロー or フォロー解除）
   const handleToggleFollow = async () => {
-    if (loading) return; // 二重クリック防止
+    if (loading) return;
     setLoading(true);
 
-    // ログイン中のユーザー情報を取得
-    const currentUser = (await supabase.auth.getUser()).data.user;
-    if (!currentUser) {
-      console.error('ログインユーザーが取得できません');
-      setLoading(false);
-      return;
+    try {
+      const res = await fetch('/api/follow', {
+        method: "DELETE",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetUserId: userId }),
+      });
+
+      if (res.ok) {
+  setIsFollowing(!isFollowing);
+} else {
+  let errorMessage = '不明なエラー';
+  try {
+    const error = await res.json();
+    errorMessage = error.message;
+  } catch {
+    // JSONが空だった場合はそのまま
+  }
+  console.error('APIエラー:', errorMessage);
+}
+
+    } catch (err) {
+      console.error('通信エラー:', err);
     }
 
-    if (isFollowing) {
-      // 🗑️ フォロー解除（Follow テーブルから削除）
-      const { error } = await supabase
-        .from('Follow')
-        .delete()
-        .eq('follower_id', currentUser.id)
-        .eq('followed_id', userId);
-
-      if (!error) {
-        setIsFollowing(false); // 状態を更新
-      } else {
-        console.error('フォロー解除失敗:', error.message);
-      }
-    } else {
-      // ➕ フォロー追加（Follow テーブルに挿入）
-      const { error } = await supabase.from('Follow').insert([
-        {
-          follower_id: currentUser.id,
-          followed_id: userId,
-        },
-      ]);
-
-      if (!error) {
-        setIsFollowing(true); // 状態を更新
-      } else {
-        console.error('フォロー失敗:', error.message);
-      }
-    }
-
-    setLoading(false); // ローディング解除
+    setLoading(false);
   };
 
-  // ボタンの表示とスタイル
   return (
     <button
       onClick={handleToggleFollow}
