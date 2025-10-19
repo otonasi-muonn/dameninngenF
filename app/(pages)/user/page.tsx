@@ -15,7 +15,7 @@ export default async function AllUserPage() {
     .neq('id', userId);
 
   const usersWithFollowStatus = await Promise.all(
-    users.map(async (u) => {
+    (users ?? []).map(async (u) => {
       const { data: followData } = await supabase
         .from('Follow')
         .select('id')
@@ -29,6 +29,7 @@ export default async function AllUserPage() {
       };
     })
   );
+
 
     return (
     <div>
