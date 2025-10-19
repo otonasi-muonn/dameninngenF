@@ -2,8 +2,6 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import FollowButton from '../../_components/ui/FollowButton';
 
-
-
 export default async function UserPage() {
   const supabase = createServerComponentClient({ cookies });
   const {
@@ -25,15 +23,15 @@ export default async function UserPage() {
   const followingSet = new Set(followings?.map((f) => f.followingId));
 
   const usersWithFollowStatus = users?.map((u) => ({
-  ...u,
-  isFollowing: followingSet.has(u.id),
-}));
+    ...u,
+    isFollowing: followingSet.has(u.id),
+  }));
 
   return (
     <div>
-      <h2 style={{ fontFamily: 'sans-serif', color: '#333',fontSize: '28px', marginBottom: '20px'}}>👥 ユーザー一覧</h2>
+      <h2 style={{ fontFamily: 'sans-serif', color: '#333', fontSize: '28px', marginBottom: '20px' }}>👥 ユーザー一覧</h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        {usersWithFollowStatus.map((u) => (
+        {(usersWithFollowStatus ?? []).map((u) => (
           <div
             key={u.id}
             style={{
@@ -58,7 +56,6 @@ export default async function UserPage() {
           </div>
         ))}
       </div>
-    </div> 
+    </div>
   );
-}  
-
+}
