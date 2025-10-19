@@ -1,59 +1,67 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import FollowButton from '../../_components/ui/FollowButton';
-export default async function AllUserPage() {
-  const supabase = createServerComponentClient({ cookies });
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const userId = session?.user.id;
-  const { data: users } = await supabase
-    .from('User')
-    .select('id, name')
-    .neq('id', userId);
+'use client';
 
-  const { data: followList } = await supabase
-  .from('Follow')
-  .select('followerId')
-  .eq('followingId', userId);
+import { useState } from 'react';
 
-const followingSet = new Set(followList?.map((f) => f.followerId));
+type FollowButtonProps = {
+  userId: string;
+  isInitiallyFollowing: boolean;
+};
 
-const usersWithFollowStatus = users?.map((u) => ({
-  ...u,
-  isFollowing: followingSet.has(u.id),
-}));
+export default function FollowButton({ userId, isInitiallyFollowing }: FollowButtonProps) {
+  const [isFollowing, setIsFollowing] = useState(isInitiallyFollowing);
+  const [isLoading, setIsLoading] = useState(false);
 
+  const handleToggleFollow = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
 
-    return (
-    <div>
-      <h2 style={{ fontFamily: 'sans-serif', color: '#333',fontSize: '28px', marginBottom: '20px'}}>👥 ユーザー一覧</h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        {(usersWithFollowStatus ?? []).map((u) => (
-          <div
-            key={u.id}
-            style={{
-              padding: '15px',
-              borderRadius: '8px',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              backgroundColor: '#f9f9f9',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '16px' }}>
-              {u.name || '名無しさん'}
-            </p>
-            {userId && (
-              <FollowButton
-                userId={u.id}
-                isInitiallyFollowing={u.isFollowing}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-    </div> 
+    const originalFollowingState = isFollowing;
+    // UIを即時反映（オプティミスティックアップデート）
+    setIsFollowing(!originalFollowingState);
+
+    try {
+      const res = await fetch('/api/follow', {
+        method: originalFollowingState ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ followingId: userId }),
+      });
+
+      if (!res.ok) {
+        // エラーが発生した場合はUIを元の状態に戻す
+        setIsFollowing(originalFollowingState);
+        alert('操作に失敗しました。');
+      }
+      
+      // router.refresh() はプレビュー環境でエラーになるため削除。
+      // 必要に応じて手動でページをリロードする必要があります。
+
+    } catch (error) {
+      console.error('フォロー/フォロー解除に失敗しました:', error);
+      setIsFollowing(originalFollowingState);
+      alert('通信エラーが発生しました。');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleToggleFollow}
+      disabled={isLoading}
+      style={{
+        padding: '8px 16px',
+        borderRadius: '99px',
+        border: '1px solid',
+        borderColor: isFollowing ? '#ccc' : '#1DA1F2',
+        backgroundColor: isFollowing ? 'white' : '#1DA1F2',
+        color: isFollowing ? 'black' : 'white',
+        cursor: isLoading ? 'wait' : 'pointer',
+        fontWeight: 'bold',
+        transition: 'all 0.2s ease',
+        minWidth: '100px',
+      }}
+    >
+      {isLoading ? '処理中...' : isFollowing ? 'フォロー中' : 'フォロー'}
+    </button>
   );
-}  
+}
