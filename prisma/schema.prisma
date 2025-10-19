@@ -15,7 +15,6 @@ model User {
   bio        String?   @db.Text    // 自己紹介
   birthday   DateTime?             // 誕生日
   avatar_url String?               // アイコンURL
-  // --------------------------
 
   episodes   Episode[]
   likes      Like[]
@@ -63,4 +62,3 @@ model Follow {
   // 複合主キーで、同じユーザーを二度フォローできないようにする
   @@id([followerId, followingId])
 }
-// ----------------------------------------------------
