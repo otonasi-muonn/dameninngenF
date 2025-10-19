@@ -1,6 +1,6 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import FollowButton from '../../_components/ui/FollowButton';
+import FollowButton from '@/components/ui/FollowButton';
 
 type UserItem = { id: string; name?: string | null };
 

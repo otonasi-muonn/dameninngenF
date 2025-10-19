@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 // `params` を受け取ることで、URLの [episode_id] を取得できる
 export async function POST(
@@ -19,7 +20,7 @@ export async function POST(
   const user_id = session.user.id;
 
   try {
-    const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const del = await tx.like.deleteMany({ where: { user_id, episode_id } })
       if (del.count > 0) return { message: 'Unliked' as const }
       await tx.like.create({ data: { user_id, episode_id } })
