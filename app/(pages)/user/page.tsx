@@ -2,6 +2,8 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import FollowButton from '../../_components/ui/FollowButton';
 
+type UserItem = { id: string; name?: string | null };
+
 
 
 export default async function UserPage() {
@@ -12,6 +14,7 @@ export default async function UserPage() {
 
   const currentUserId = session?.user.id;
 
+  // supabase の data は undefined になる可能性があるのでデフォルトを空配列にする
   const { data: users } = await supabase
     .from('User')
     .select('id, name')
@@ -22,12 +25,16 @@ export default async function UserPage() {
     .select('followingId')
     .eq('followerId', currentUserId);
 
-  const followingSet = new Set(followings?.map((f) => f.followingId));
+  const usersArr = users ?? [];
+  const followingsArr = followings ?? [];
 
-  const usersWithFollowStatus = users?.map((u) => ({
-  ...u,
-  isFollowing: followingSet.has(u.id),
-}));
+  const followingSet = new Set(followingsArr.map((f) => f.followingId));
+
+  const usersWithFollowStatus: Array<{ id: string; name?: string | null; isFollowing: boolean }> =
+    usersArr.map((u: UserItem) => ({
+      ...u,
+      isFollowing: followingSet.has(u.id),
+    }));
 
   return (
     <div>
@@ -60,5 +67,5 @@ export default async function UserPage() {
       </div>
     </div> 
   );
-}  
+}
 

@@ -1,7 +1,6 @@
 'use client'; // ボタンのクリックを扱うのでクライアントコンポーネント
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 type LikeButtonProps = {
   episodeId: string;
@@ -12,7 +11,6 @@ type LikeButtonProps = {
 export default function LikeButton({ episodeId, initialLikes, isInitiallyLiked }: LikeButtonProps) {
   const [likes, setLikes] = useState(initialLikes);
   const [isLiked, setIsLiked] = useState(isInitiallyLiked);
-  const router = useRouter();
 
   const handleLike = async () => {
     // APIにリクエストを送信
