@@ -6,7 +6,7 @@ import LikeButton from './LikeButton';
 type Episode = {
   id: string;
   content: string;
-  created_at: Date;
+  created_at: Date | string;
   user: { name: string | null } | null;
   _count: { likes: number };
   likes: { user_id: string }[];
