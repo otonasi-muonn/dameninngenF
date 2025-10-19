@@ -1,0 +1,140 @@
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import Link from 'next/link';
+import { prisma } from '@/lib/prisma';
+import EpisodeSearchList from '@/components/ui/EpisodeSearchList';
+
+// TDN型定義
+type TdnData = {
+  id: string;
+  content: string;
+  created_at: Date;
+  user: { name: string | null } | null;
+  _count: { likes: number };
+} | null;
+
+// TDNのデータを取得する関数
+async function getTdn(): Promise<TdnData> {
+  try {
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const topLikes = await prisma.like.groupBy({
+      by: ['episode_id'],
+      where: {
+        created_at: { gte: twentyFourHoursAgo },
+      },
+      _count: { episode_id: true },
+      orderBy: { _count: { episode_id: 'desc' } },
+      take: 1,
+    });
+
+    if (topLikes.length === 0) {
+      // 24時間以内のいいねがない場合、全ての期間でトップの投稿を探す
+      const allTimeTop = await prisma.episode.findFirst({
+        orderBy: {
+          likes: {
+            _count: 'desc',
+          },
+        },
+        include: {
+          user: { select: { name: true } },
+          _count: { select: { likes: true } },
+        },
+      });
+      return allTimeTop;
+    }
+
+    const tdnEpisode = await prisma.episode.findUnique({
+      where: { id: topLikes[0].episode_id },
+      include: {
+        user: { select: { name: true } },
+        _count: { select: { likes: true } },
+      },
+    });
+    return tdnEpisode;
+  } catch (error) {
+    console.error('Failed to fetch TDN:', error);
+    return null;
+  }
+}
+
+export default async function HomePage() {
+  const supabase = createServerComponentClient({ cookies });
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session?.user?.id;
+
+  // ログインユーザーの情報を取得
+  const currentUser = userId ? await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true }
+  }) : null;
+
+  // サーバーサイドでエピソード一覧とTDNを並行して取得
+  const [episodes, tdn] = await Promise.all([
+    prisma.episode.findMany({
+      orderBy: { created_at: 'desc' },
+      include: {
+        user: {
+          select: { name: true },
+        },
+        _count: {
+          select: { likes: true },
+        },
+        likes: {
+          where: { user_id: userId || '' },
+          select: { user_id: true },
+        },
+      },
+    }),
+    getTdn(),
+  ]);
+
+  return (
+    <div>
+      <h1>今日のダメ人間度管理アプリ (仮)</h1>
+
+      {/* TDN表示エリア */}
+      <div style={{ border: '2px solid gold', padding: '20px', margin: '20px 0', backgroundColor: '#fffacd' }}>
+        <h2>👑 今日のダメ人間 (TDN) 👑</h2>
+        {tdn ? (
+          <div>
+            <h3>{tdn.content}</h3>
+            <p>投稿者: {tdn.user?.name || '名無しさん'}</p>
+            <p>いいね数: {tdn._count.likes}</p>
+          </div>
+        ) : (
+          <p>今日のダメ人間はまだいません。あなたが初代TDNになるチャンス！</p>
+        )}
+        <div style={{ marginTop: '15px' }}>
+          <Link href="/tdn" style={{ color: '#b8860b', textDecoration: 'underline' }}>
+            詳細を見る
+          </Link>
+        </div>
+      </div>
+
+      {/* ログイン状態による表示切り替え */}
+      {session ? (
+        <div>
+          <p>ようこそ、{currentUser?.name || session.user.email} さん</p>
+          <form action="/login" method="post" style={{ display: 'inline', marginLeft: '20px' }}>
+            <button type="submit" style={{ background: '#dc3545', color: '#fff', border: 'none', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer' }}>
+              ログアウト
+            </button>
+          </form>
+          <div style={{ marginTop: '20px' }}>
+            <Link href="/episodes" style={{ color: 'blue', textDecoration: 'underline' }}>
+              エピソードを投稿する
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <p>投稿やいいねをするにはログインが必要です。</p>
+          <Link href="/login" style={{ color: 'blue' }}>ログインページへ</Link>
+        </div>
+      )}
+
+      {/* エピソード一覧（検索機能付き） */}
+      <EpisodeSearchList episodes={episodes} isLoggedIn={!!session} />
+    </div>
+  );
+}
