@@ -1,6 +1,7 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import FollowButton from '@/components/ui/FollowButton';
+import { prisma } from '@/lib/prisma';
 
 type UserItem = { id: string; name?: string | null };
 
@@ -14,27 +15,38 @@ export default async function UserPage() {
 
   const currentUserId = session?.user.id;
 
-  // supabase の data は undefined になる可能性があるのでデフォルトを空配列にする
-  const { data: users } = await supabase
-    .from('User')
-    .select('id, name')
-    .neq('id', currentUserId);
+  // N+1回避
+  const rows = await prisma.user.findMany({
+    where: { id: { not: currentUserId ?? undefined } },
+    select: {
+      id: true,
+      name: true,
+      // 自分がフォローしているかを絞り込み取得（有無だけ見たいので take:1）
+      followedBy: currentUserId
+        ? {
+            where: { followerId: currentUserId },
+            select: { followerId: true },
+            take: 1,
+          }
+        : false,
+    },
+    orderBy: { name: 'asc' },
+  });
 
-  const { data: followings } = await supabase
-    .from('Follow')
-    .select('followingId')
-    .eq('followerId', currentUserId);
+  type Row = {
+    id: string;
+    name: string | null;
+    followedBy?: Array<{ followerId: string }>;
+  };
 
-  const usersArr = users ?? [];
-  const followingsArr = followings ?? [];
-
-  const followingSet = new Set(followingsArr.map((f) => f.followingId));
-
-  const usersWithFollowStatus: Array<{ id: string; name?: string | null; isFollowing: boolean }> =
-    usersArr.map((u: UserItem) => ({
-      ...u,
-      isFollowing: followingSet.has(u.id),
-    }));
+  const usersWithFollowStatus: Array<{ id: string; name?: string | null; isFollowing: boolean }> = rows.map(
+    (u: Row) => ({
+      id: u.id,
+      name: u.name ?? null,
+      // 未ログイン時は false、ログイン時は関連が1件以上あれば true
+      isFollowing: Array.isArray(u.followedBy) ? u.followedBy.length > 0 : false,
+    })
+  );
 
   return (
     <div>
