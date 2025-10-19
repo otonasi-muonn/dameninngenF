@@ -2,11 +2,19 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import PostForm from './_components/ui/PostForm';
-import LikeButton from './_components/ui/LikeButton';
+import EpisodeSearchList from '@/components/ui/EpisodeSearchList';
+
+// TDN型定義
+type TdnData = {
+  id: string;
+  content: string;
+  created_at: Date;
+  user: { name: string | null } | null;
+  _count: { likes: number };
+} | null;
 
 // TDNのデータを取得する関数
-async function getTdn() {
+async function getTdn(): Promise<TdnData> {
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const topLikes = await prisma.like.groupBy({
@@ -125,27 +133,8 @@ export default async function HomePage() {
         </div>
       )}
 
-      {/* エピソード一覧 */}
-      <div style={{ marginTop: '40px' }}>
-        <h2>みんなのダメ人間エピソード</h2>
-        {episodes.map((episode) => (
-          <div key={episode.id} style={{ border: '1px solid #ccc', padding: '10px', marginTop: '10px' }}>
-            <p>{episode.content}</p>
-            <small>
-              投稿者: {episode.user?.name || '名無しさん'} - {new Date(episode.created_at).toLocaleString()}
-            </small>
-            
-            {/* ログインしている時だけいいねボタンを表示 */}
-            {session && (
-              <LikeButton
-                episodeId={episode.id}
-                initialLikes={episode._count.likes}
-                isInitiallyLiked={episode.likes.length > 0}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+      {/* エピソード一覧（検索機能付き） */}
+      <EpisodeSearchList episodes={episodes} isLoggedIn={!!session} />
     </div>
   );
 }

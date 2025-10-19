@@ -2,8 +2,8 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import PostForm from '../../_components/ui/PostForm';
-import LikeButton from '../../_components/ui/LikeButton';
+import PostForm from '@/components/ui/PostForm';
+import LikeButton from '@/components/ui/LikeButton';
 
 export default async function EpisodesPage() {
   const supabase = createServerComponentClient({ cookies });
