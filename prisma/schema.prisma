@@ -11,6 +11,9 @@ datasource db {
 model User {
   id                              String    @id
   name                            String?
+  bio         String?   @db.Text   // 自己紹介
+  birthday    DateTime?           // 誕生日
+  avatar_url  String?             // アイコンURL
   episodes                        Episode[]
   Follow_Follow_followed_idToUser Follow[]  @relation("Follow_followed_idToUser")
   Follow_Follow_follower_idToUser Follow[]  @relation("Follow_follower_idToUser")
