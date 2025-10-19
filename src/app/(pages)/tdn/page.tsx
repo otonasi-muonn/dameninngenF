@@ -1,56 +1,77 @@
-import { prisma } from '@/lib/prisma';
+'use client';
 
-// TDNのデータを取得する関数
-async function getTdn() {
-  try {
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const topLikes = await prisma.like.groupBy({
-      by: ['episode_id'],
-      where: {
-        created_at: { gte: twentyFourHoursAgo },
-      },
-      _count: { episode_id: true },
-      orderBy: { _count: { episode_id: 'desc' } },
-      take: 1,
-    });
+import { useState, useEffect } from 'react';
 
-    if (topLikes.length === 0) {
-      // 24時間以内のいいねがない場合、全ての期間でトップの投稿を探す
-      const allTimeTop = await prisma.episode.findFirst({
-        orderBy: {
-          likes: {
-            _count: 'desc',
-          },
-        },
-        include: {
-          user: { select: { name: true } },
-          _count: { select: { likes: true } },
-        },
-      });
-      return allTimeTop;
+type Episode = {
+  id: string;
+  content: string;
+  created_at: Date;
+  user: { name: string } | null;
+  _count: { likes: number };
+};
+
+type TdnHistoryItem = {
+  date: string;
+  episode: Episode | null;
+  likes: number;
+};
+
+export default function TdnPage() {
+  const [tdn, setTdn] = useState<Episode | null>(null);
+  const [tdnHistory, setTdnHistory] = useState<TdnHistoryItem[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  // 今日のTDNを取得
+  useEffect(() => {
+    async function fetchTdn() {
+      try {
+        const res = await fetch('/api/tdn');
+        if (res.ok) {
+          const data = await res.json();
+          setTdn(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch TDN:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTdn();
+  }, []);
+
+  // 過去のTDNを取得
+  const fetchTdnHistory = async () => {
+    if (tdnHistory.length > 0) {
+      // 既に取得済みの場合は表示を切り替えるだけ
+      setShowHistory(!showHistory);
+      return;
     }
 
-    const tdnEpisode = await prisma.episode.findUnique({
-      where: { id: topLikes[0].episode_id },
-      include: {
-        user: { select: { name: true } },
-        _count: { select: { likes: true } },
-      },
-    });
-    return tdnEpisode;
-  } catch (error) {
-    console.error('Failed to fetch TDN:', error);
-    return null;
-  }
-}
+    setHistoryLoading(true);
+    try {
+      const res = await fetch('/api/tdn/history');
+      if (res.ok) {
+        const data = await res.json();
+        setTdnHistory(data);
+        setShowHistory(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch TDN history:', error);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
-export default async function TdnPage() {
-  const tdn = await getTdn();
+  if (loading) {
+    return <div style={{ padding: 16 }}>読み込み中...</div>;
+  }
 
   return (
     <div style={{ padding: 16 }}>
       <h1>👑 今日のダメ人間 (TDN) 👑</h1>
-      
+
       {tdn ? (
         <div style={{ border: '2px solid gold', backgroundColor: '#fffacd', padding: 20, borderRadius: 8, margin: '20px 0' }}>
           <h2 style={{ marginTop: 0, color: '#b8860b' }}>{tdn.content}</h2>
@@ -66,12 +87,86 @@ export default async function TdnPage() {
           <p>あなたが初代TDNになるチャンス！</p>
         </div>
       )}
-      
+
       <div style={{ marginTop: 30, textAlign: 'center' }}>
         <p style={{ color: '#666', fontSize: '14px' }}>
           TDNは24時間以内に最もいいねを獲得したエピソードです
         </p>
+
+        {/* 過去のTDNを見るボタン */}
+        <button
+          onClick={fetchTdnHistory}
+          disabled={historyLoading}
+          style={{
+            marginTop: 20,
+            padding: '10px 20px',
+            backgroundColor: '#b8860b',
+            color: 'white',
+            border: 'none',
+            borderRadius: 6,
+            cursor: historyLoading ? 'wait' : 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold',
+          }}
+        >
+          {historyLoading ? '読み込み中...' : showHistory ? '過去のTDNを隠す' : '過去のTDNを見る'}
+        </button>
       </div>
+
+      {/* 過去のTDN一覧 */}
+      {showHistory && (
+        <div style={{ marginTop: 40 }}>
+          <h2>📜 過去のTDN履歴</h2>
+          {tdnHistory.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {tdnHistory.map((item) => (
+                <div
+                  key={item.date}
+                  style={{
+                    border: '1px solid #daa520',
+                    backgroundColor: '#fffef0',
+                    padding: 16,
+                    borderRadius: 8,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 12,
+                    borderBottom: '1px solid #daa520',
+                    paddingBottom: 8,
+                  }}>
+                    <span style={{ fontWeight: 'bold', color: '#b8860b' }}>
+                      📅 {new Date(item.date).toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </span>
+                    <span style={{ color: '#666', fontSize: '14px' }}>
+                      ❤️ {item.likes} いいね
+                    </span>
+                  </div>
+                  {item.episode && (
+                    <div>
+                      <p style={{ margin: '8px 0', fontSize: '16px' }}>{item.episode.content}</p>
+                      <small style={{ color: '#666' }}>
+                        投稿者: {item.episode.user?.name || '名無しさん'}
+                      </small>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ textAlign: 'center', color: '#666' }}>
+              過去のTDN履歴がありません
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
