@@ -3,12 +3,20 @@ import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import PostForm from '@/components/ui/PostForm';
-import LikeButton from '@/components/ui/LikeButton';
+// Define a lightweight local type matching the fields we use in this component
+type EpisodeItem = {
+  id: string;
+  content: string;
+  created_at: string | Date;
+  user?: { name?: string | null } | null;
+  _count: { likes: number };
+  likes: Array<{ user_id: string }>;
+};
 
 export default async function EpisodesPage() {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   // ログインユーザーの情報を取得
   const currentUser = userId ? await prisma.user.findUnique({
@@ -31,9 +39,9 @@ export default async function EpisodesPage() {
     <div style={{ padding: 16 }}>
       <h1>ダメ人間エピソード投稿</h1>
 
-      {session ? (
+      {user ? (
         <div>
-          <p>投稿者: {currentUser?.name || session.user.email}</p>
+          <p>投稿者: {currentUser?.name || user.email}</p>
           <PostForm />
         </div>
       ) : (
@@ -46,11 +54,11 @@ export default async function EpisodesPage() {
       )}
 
       {/* 自分の投稿一覧 */}
-      {session && (
+      {user && (
         <div style={{ marginTop: 40 }}>
           <h2>あなたの投稿</h2>
           {myEpisodes.length > 0 ? (
-            myEpisodes.map((episode) => (
+            myEpisodes.map((episode: EpisodeItem) => (
               <div key={episode.id} style={{ 
                 border: '1px solid #e1e8ed', 
                 padding: 16, 

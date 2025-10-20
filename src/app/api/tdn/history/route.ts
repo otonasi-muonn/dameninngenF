@@ -7,7 +7,18 @@ export async function GET() {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
     // 過去30日間のいいねを日ごとにグループ化
-    const likes = await prisma.like.findMany({
+    type LikeItem = {
+      created_at: Date | string;
+      episode_id: string;
+      episode: {
+        id: string;
+        content: string;
+        created_at: Date | string;
+        user: { name: string | null } | null;
+      };
+    };
+
+    const likes = (await prisma.like.findMany({
       where: {
         created_at: { gte: thirtyDaysAgo },
       },
@@ -21,12 +32,11 @@ export async function GET() {
       orderBy: {
         created_at: 'desc',
       },
-    });
+    })) as LikeItem[];
 
     // 日ごとにエピソードをグループ化して最もいいねが多いものを抽出
-    const dailyTdnMap = new Map<string, Map<string, { episode: typeof likes[0]['episode']; count: number }>>();
-
-    likes.forEach((like) => {
+  const dailyTdnMap = new Map<string, Map<string, { episode: LikeItem['episode']; count: number }>>();
+  likes.forEach((like: LikeItem) => {
       const date = new Date(like.created_at).toISOString().split('T')[0]; // YYYY-MM-DD形式
 
       if (!dailyTdnMap.has(date)) {

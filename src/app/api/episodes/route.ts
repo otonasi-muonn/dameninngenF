@@ -6,9 +6,9 @@ import { prisma } from '@/lib/prisma';
 // POST /api/episodes — create new episode (auth required)
 export async function POST(request: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user){
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const created = await prisma.episode.create({
-      data: { content, user_id: session.user.id },
+      data: { content, user_id: user.id },
       select: { id: true, content: true, created_at: true, user_id: true },
     });
     return NextResponse.json(created, { status: 201 });
@@ -47,10 +47,19 @@ export async function GET(request: NextRequest) {
 
     // Optional user for likedByMe
     const supabase = createRouteHandlerClient({ cookies });
-    const { data: { session } } = await supabase.auth.getSession();
-    const me = session?.user?.id ?? null;
+    const { data: { user } } = await supabase.auth.getUser();
+    const me = user?.id ?? null;
 
-    const [rows, total] = await Promise.all([
+    type EpisodeRow = {
+      id: string;
+      content: string;
+      created_at: string | Date;
+      user_id: string;
+      user?: { name?: string | null } | null;
+      _count: { likes: number };
+    };
+
+    const [rows, total]: [EpisodeRow[], number] = await Promise.all([
       prisma.episode.findMany({
         orderBy: { created_at: 'desc' },
         skip,
@@ -63,20 +72,20 @@ export async function GET(request: NextRequest) {
           user: { select: { name: true } },
           _count: { select: { likes: true } },
         },
-      }),
+      }) as Promise<EpisodeRow[]>,
       prisma.episode.count(),
     ]);
 
     let likedSet: Set<string> = new Set();
     if (me && rows.length > 0) {
-      const likes = await prisma.like.findMany({
-        where: { user_id: me, episode_id: { in: rows.map((r) => r.id) } },
+      const likes = (await prisma.like.findMany({
+        where: { user_id: me, episode_id: { in: rows.map((r: EpisodeRow) => r.id) } },
         select: { episode_id: true },
-      });
-      likedSet = new Set(likes.map((l) => l.episode_id));
+      })) as Array<{ episode_id: string }>;
+      likedSet = new Set(likes.map((l: { episode_id: string }) => l.episode_id));
     }
 
-    const items = rows.map((e) => ({
+    const items = rows.map((e: EpisodeRow) => ({
       id: e.id,
       content: e.content,
       created_at: e.created_at,

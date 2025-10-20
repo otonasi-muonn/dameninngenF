@@ -55,7 +55,7 @@ export default function LikeButton({
 
   // いいね済みのスタイル
   const likedStyle: React.CSSProperties = {
-    background: '#transparent' ,//透明 
+    background: '#transparent', // 透明
     color: '#888',
     boxShadow: 'none',
   }

@@ -11,20 +11,13 @@ datasource db {
 model User {
   id         String    @id
   name       String?
-  // --まなさんの変更点を統合 ---
-  bio        String?   @db.Text    // 自己紹介
-  birthday   DateTime?             // 誕生日
-  avatar_url String?               // アイコンURL
-
+  avatar_url String?
+  bio        String?
+  birthday   DateTime?
   episodes   Episode[]
-  likes      Like[]
-
-  // ---高橋のリレーション定義 ---
-  // ↓ フォローしているユーザー (自分がフォロワー)
   following  Follow[]  @relation("Following")
-  // ↓ フォローされているユーザー (自分がフォロー対象)
   followedBy Follow[]  @relation("FollowedBy")
-  // ----------------------------------------
+  likes      Like[]
 }
 
 model Episode {
@@ -49,16 +42,12 @@ model Like {
   @@index([created_at, episode_id])
 }
 
-// ---高橋さんのFollowモデル ---
 model Follow {
+  createdAt   DateTime @default(now())
   followerId  String
   followingId String
-  createdAt   DateTime @default(now())
-
-  // リレーションの定義
   follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
   following   User     @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
 
-  // 複合主キーで、同じユーザーを二度フォローできないようにする
   @@id([followerId, followingId])
 }
