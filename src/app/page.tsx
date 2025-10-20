@@ -2,11 +2,19 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import PostForm from './_components/ui/PostForm';
-import LikeButton from './_components/ui/LikeButton';
+import EpisodeSearchList from '@/components/ui/EpisodeSearchList';
+
+// TDN型定義
+type TdnData = {
+  id: string;
+  content: string;
+  created_at: Date;
+  user: { name: string | null } | null;
+  _count: { likes: number };
+} | null;
 
 // TDNのデータを取得する関数
-async function getTdn() {
+async function getTdn(): Promise<TdnData> {
   try {
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const topLikes = await prisma.like.groupBy({
@@ -51,8 +59,14 @@ async function getTdn() {
 
 export default async function HomePage() {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
+
+  // ログインユーザーの情報を取得
+  const currentUser = userId ? await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true }
+  }) : null;
 
   // サーバーサイドでエピソード一覧とTDNを並行して取得
   const [episodes, tdn] = await Promise.all([
@@ -90,18 +104,27 @@ export default async function HomePage() {
         ) : (
           <p>今日のダメ人間はまだいません。あなたが初代TDNになるチャンス！</p>
         )}
+        <div style={{ marginTop: '15px' }}>
+          <Link href="/tdn" style={{ color: '#b8860b', textDecoration: 'underline' }}>
+            詳細を見る
+          </Link>
+        </div>
       </div>
 
       {/* ログイン状態による表示切り替え */}
-      {session ? (
+      {user ? (
         <div>
-          <p>ようこそ、{session.user.email} さん</p>
-          <form action="/api/auth/logout" method="post" style={{ display: 'inline', marginLeft: '20px' }}>
+          <p>ようこそ、{currentUser?.name || user.email} さん</p>
+          <form action="/login" method="post" style={{ display: 'inline', marginLeft: '20px' }}>
             <button type="submit" style={{ background: '#dc3545', color: '#fff', border: 'none', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer' }}>
               ログアウト
             </button>
           </form>
-          <PostForm />
+          <div style={{ marginTop: '20px' }}>
+            <Link href="/episodes" style={{ color: 'blue', textDecoration: 'underline' }}>
+              エピソードを投稿する
+            </Link>
+          </div>
         </div>
       ) : (
         <div>
@@ -110,27 +133,8 @@ export default async function HomePage() {
         </div>
       )}
 
-      {/* エピソード一覧 */}
-      <div style={{ marginTop: '40px' }}>
-        <h2>みんなのダメ人間エピソード</h2>
-        {episodes.map((episode) => (
-          <div key={episode.id} style={{ border: '1px solid #ccc', padding: '10px', marginTop: '10px' }}>
-            <p>{episode.content}</p>
-            <small>
-              投稿者: {episode.user?.name || '名無しさん'} - {new Date(episode.created_at).toLocaleString()}
-            </small>
-            
-            {/* ログインしている時だけいいねボタンを表示 */}
-            {session && (
-              <LikeButton
-                episodeId={episode.id}
-                initialLikes={episode._count.likes}
-                isInitiallyLiked={episode.likes.length > 0}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+      {/* エピソード一覧（検索機能付き） */}
+      <EpisodeSearchList episodes={episodes} isLoggedIn={!!user} />
     </div>
   );
 }
