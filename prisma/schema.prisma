@@ -27,7 +27,7 @@ model Episode {
   user_id    String
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   likes      Like[]
-
+  category   String   @default("日常生活")
   @@index([created_at])
 }
 
