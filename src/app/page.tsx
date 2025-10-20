@@ -59,8 +59,8 @@ async function getTdn(): Promise<TdnData> {
 
 export default async function HomePage() {
   const supabase = createServerComponentClient({ cookies });
-  const { data: { session } } = await supabase.auth.getSession();
-  const userId = session?.user?.id;
+  const { data: { user } } = await supabase.auth.getUser();
+  const userId = user?.id;
 
   // ログインユーザーの情報を取得
   const currentUser = userId ? await prisma.user.findUnique({
@@ -112,9 +112,9 @@ export default async function HomePage() {
       </div>
 
       {/* ログイン状態による表示切り替え */}
-      {session ? (
+      {user ? (
         <div>
-          <p>ようこそ、{currentUser?.name || session.user.email} さん</p>
+          <p>ようこそ、{currentUser?.name || user.email} さん</p>
           <form action="/login" method="post" style={{ display: 'inline', marginLeft: '20px' }}>
             <button type="submit" style={{ background: '#dc3545', color: '#fff', border: 'none', padding: '6px 16px', borderRadius: '4px', cursor: 'pointer' }}>
               ログアウト
@@ -134,7 +134,7 @@ export default async function HomePage() {
       )}
 
       {/* エピソード一覧（検索機能付き） */}
-      <EpisodeSearchList episodes={episodes} isLoggedIn={!!session} />
+      <EpisodeSearchList episodes={episodes} isLoggedIn={!!user} />
     </div>
   );
 }

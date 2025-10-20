@@ -1,34 +1,59 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
-// `params` を受け取ることで、URLの [episode_id] を取得できる
+// いいね（作成）
 export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ episode_id: string }> }
+  _req: NextRequest,
+  context: { params: Promise<{ episode_id: string }> }
 ) {
-  const { episode_id } = await params;
-  const supabase = createRouteHandlerClient({ cookies });
+  const { episode_id } = await context.params;
 
-  // ログインユーザーの情報を取得
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-  const user_id = session.user.id;
+  const supabase = createRouteHandlerClient({ cookies });
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-  const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const del = await tx.like.deleteMany({ where: { user_id, episode_id } })
-      if (del.count > 0) return { message: 'Unliked' as const }
-      await tx.like.create({ data: { user_id, episode_id } })
-      return { message: 'Liked' as const }
-    })
-    return NextResponse.json(result)
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 });
+    await prisma.like.create({
+      data: { user_id: user.id, episode_id },
+    });
+    return NextResponse.json({ ok: true });
+  } catch (e: unknown) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      // 一意制約違反 = すでにいいね済み -> 成功扱い
+      return NextResponse.json({ ok: true });
+    }
+    console.error('Like POST error:', e);
+    return NextResponse.json({ error: 'Failed to like' }, { status: 500 });
+  }
+}
+
+// いいね解除（削除）
+export async function DELETE(
+  _req: NextRequest,
+  context: { params: Promise<{ episode_id: string }> }
+) {
+  const { episode_id } = await context.params;
+
+  const supabase = createRouteHandlerClient({ cookies });
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  try {
+    await prisma.like.delete({
+      where: {
+        user_id_episode_id: { user_id: user.id, episode_id },
+      },
+    });
+    return NextResponse.json({ ok: true });
+  } catch (e: unknown) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+      // 対象が存在しない = すでに解除済み -> 成功扱い
+      return NextResponse.json({ ok: true });
+    }
+    console.error('Like DELETE error:', e);
+    return NextResponse.json({ error: 'Failed to unlike' }, { status: 500 });
   }
 }
