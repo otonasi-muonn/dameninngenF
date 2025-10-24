@@ -22,6 +22,7 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [followStats, setFollowStats] = useState<{ followingCount: number; followerCount: number } | null>(null);
 
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -63,6 +64,26 @@ export default function ProfilePage() {
     };
     fetchProfile();
   }, [router, supabase.auth]);
+
+  useEffect(() => {
+  const fetchFollowStats = async () => {
+    if (!mounted) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const res = await fetch('/api/follow-count', {
+      method: 'POST',
+      body: JSON.stringify({ userId: user.id }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setFollowStats(data);
+    }
+  };
+
+  fetchFollowStats();
+}, [mounted]);
 
   const birthdayDisplay = useMemo(() => {
     if (!profile?.birthday) return '未設定';
@@ -264,8 +285,17 @@ export default function ProfilePage() {
             </form>
           ) : (
             <div className="space-y-5">
-              <div className="flex justify-center">
-                <div className="w-32 h-32 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+              <div className="flex items-center justify-center gap-6">
+                {/* フォロー中 */}
+                {followStats && (
+                  <div className="text-center">
+                    <p className="text-sm text-blue-700 font-medium">フォロー中</p>
+                    <p className="text-xl font-bold text-blue-800">{followStats.followingCount}</p>
+                  </div>
+                )}
+
+                {/* アバター画像 */}
+                <div className="w-32 h-32 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center shadow">
                   {profile.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
@@ -273,7 +303,16 @@ export default function ProfilePage() {
                     <span className="text-4xl">👤</span>
                   )}
                 </div>
+
+                {/* フォロワー */}
+                {followStats && (
+                  <div className="text-center">
+                    <p className="text-sm text-pink-700 font-medium">フォロワー</p>
+                    <p className="text-xl font-bold text-pink-800">{followStats.followerCount}</p>
+                  </div>
+                )}
               </div>
+
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
@@ -296,10 +335,14 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">誕生日</label>
                 <div className="p-2 bg-gray-50 rounded">{birthdayDisplay}</div>
               </div>
-            </div>
+              {followStats && (
+              <div className="flex space-x-6 pt-2">
+      
+                </div>
+                
+              )}</div>
           )}
+         </div>
         </div>
       </div>
-    </div>
-  );
-}
+  )};
