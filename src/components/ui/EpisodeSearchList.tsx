@@ -7,7 +7,7 @@ import { formatUtcDateTime } from '@/utils/date';
 type Episode = {
   id: string;
   content: string;
-  category: string;
+  category?: string;
   created_at: Date | string;
   user: { name: string | null } | null;
   _count: { likes: number };
@@ -26,7 +26,7 @@ export default function EpisodeSearchList({ episodes, isLoggedIn }: Props) {
   // 検索クエリでフィルタリング
   const filteredEpisodes = episodes.filter((episode) => {
     const matchesQuery = episode.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory ? episode.category === selectedCategory : true;
+    const matchesCategory = selectedCategory ? (episode.category === selectedCategory) : true;
     return matchesQuery && matchesCategory;
   });
 
@@ -86,29 +86,31 @@ export default function EpisodeSearchList({ episodes, isLoggedIn }: Props) {
       <p>{episode.content}</p>
 
       {/* カテゴリー表示 */}
-      <p style={{ marginBottom: '8px' }}>
-  <span style={{
-    display: 'inline-block',
-    padding: '4px 10px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: 'bold',
-    backgroundColor:
-      episode.category === '恋愛' ? '#ffe4e1' :
-      episode.category === '学校・仕事' ? '#e6f7ff' :
-      episode.category === '日常生活' ? '#fffbe6' :
-      episode.category === '人間関係' ? '#f0f0f0' :
-      '#f9f9f9',
-    color:
-      episode.category === '恋愛' ? '#c62828' :
-      episode.category === '学校・仕事' ? '#1565c0' :
-      episode.category === '日常生活' ? '#ef6c00' :
-      episode.category === '人間関係' ? '#555' :
-      '#333',
-  }}>
-    {episode.category}
-  </span>
-</p>
+      {episode.category && (
+        <p style={{ marginBottom: '8px' }}>
+          <span style={{
+            display: 'inline-block',
+            padding: '4px 10px',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            backgroundColor:
+              episode.category === '恋愛' ? '#ffe4e1' :
+              episode.category === '学校・仕事' ? '#e6f7ff' :
+              episode.category === '日常生活' ? '#fffbe6' :
+              episode.category === '人間関係' ? '#f0f0f0' :
+              '#f9f9f9',
+            color:
+              episode.category === '恋愛' ? '#c62828' :
+              episode.category === '学校・仕事' ? '#1565c0' :
+              episode.category === '日常生活' ? '#ef6c00' :
+              episode.category === '人間関係' ? '#555' :
+              '#333',
+          }}>
+            {episode.category}
+          </span>
+        </p>
+      )}
 
 
 
