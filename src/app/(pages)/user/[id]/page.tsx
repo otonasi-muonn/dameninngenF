@@ -2,6 +2,7 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import FollowButton from '@/components/ui/FollowButton';
+import ActivityCalendar from '@/components/ui/ActivityCalendar';
 import { prisma } from '@/lib/prisma';
 import { calculateRank } from '@/lib/rank';
 import Link from 'next/link';
@@ -206,6 +207,11 @@ export default async function UserProfilePage({ params }: Props) {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* アクティビティカレンダー */}
+      <div style={{ marginBottom: '30px' }}>
+        <ActivityCalendar userId={userId} />
       </div>
 
       {/* エピソード一覧 */}
