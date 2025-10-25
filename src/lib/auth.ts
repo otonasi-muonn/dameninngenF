@@ -26,3 +26,14 @@ export async function isAuthenticated(): Promise<boolean> {
   const user = await getAuthenticatedUser();
   return user !== null;
 }
+
+/**
+ * リソースの所有者かチェック
+ * @param userId - チェックするユーザーID
+ * @param resourceOwnerId - リソースの所有者ID
+ * @returns 所有者の場合true
+ */
+export function isOwner(userId: string, resourceOwnerId: string): boolean {
+  return userId === resourceOwnerId;
+}
+

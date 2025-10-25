@@ -10,6 +10,7 @@ type Episode = {
   content: string;
   category?: string;
   created_at: Date | string;
+  user_id: string;
   user: { name: string | null } | null;
   _count: { likes: number };
   likes: { user_id: string }[];
@@ -18,14 +19,40 @@ type Episode = {
 type Props = {
   episodes: Episode[];
   isLoggedIn: boolean;
+  currentUserId?: string;
 };
 
-export default function EpisodeSearchList({ episodes, isLoggedIn }: Props) {
+export default function EpisodeSearchList({ episodes, isLoggedIn, currentUserId }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null); 
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [episodeList, setEpisodeList] = useState(episodes);
+
+  const handleDeleteEpisode = async (episodeId: string) => {
+    if (!confirm('このエピソードを削除しますか？')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/episodes/${episodeId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // 削除成功したらリストから削除
+        setEpisodeList(episodeList.filter(ep => ep.id !== episodeId));
+        alert('エピソードを削除しました');
+      } else {
+        const error = await response.json();
+        alert(error.error || 'エピソードの削除に失敗しました');
+      }
+    } catch (error) {
+      console.error('Failed to delete episode:', error);
+      alert('エピソードの削除に失敗しました');
+    }
+  }; 
 
   // 検索クエリでフィルタリング
-  const filteredEpisodes = episodes.filter((episode) => {
+  const filteredEpisodes = episodeList.filter((episode) => {
     const matchesQuery = episode.content.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory ? (episode.category === selectedCategory) : true;
     return matchesQuery && matchesCategory;
@@ -109,16 +136,17 @@ export default function EpisodeSearchList({ episodes, isLoggedIn }: Props) {
       }}>
         {filteredEpisodes.length > 0 ? (
           filteredEpisodes.map((episode) => (
-            <div 
-              key={episode.id} 
-              style={{ 
+            <div
+              key={episode.id}
+              style={{
                 background: 'white',
                 borderRadius: '12px',
                 padding: '20px',
                 boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
                 border: '1px solid #f0f0f0',
                 transition: 'all 0.2s',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                position: 'relative'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.boxShadow = '0 4px 16px rgba(102, 126, 234, 0.15)';
@@ -129,8 +157,40 @@ export default function EpisodeSearchList({ episodes, isLoggedIn }: Props) {
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              <p style={{ 
-                fontSize: '15px', 
+              {/* 削除ボタン（自分の投稿の場合のみ） */}
+              {currentUserId && episode.user_id === currentUserId && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteEpisode(episode.id);
+                  }}
+                  style={{
+                    position: 'absolute',
+                    top: '15px',
+                    right: '15px',
+                    background: '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = '#c82333';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = '#dc3545';
+                  }}
+                >
+                  🗑️ 削除
+                </button>
+              )}
+
+              <p style={{
+                fontSize: '15px',
                 lineHeight: '1.6',
                 color: '#333',
                 marginBottom: '12px'
@@ -197,7 +257,7 @@ export default function EpisodeSearchList({ episodes, isLoggedIn }: Props) {
               </div>
 
               {/* コメントセクション */}
-              <CommentSection episodeId={episode.id} isLoggedIn={isLoggedIn} />
+              <CommentSection episodeId={episode.id} isLoggedIn={isLoggedIn} currentUserId={currentUserId} />
             </div>
           ))
         ) : (
