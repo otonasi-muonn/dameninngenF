@@ -19,16 +19,18 @@ model User {
   followedBy        Follow[]           @relation("FollowedBy")
   likes             Like[]
   diagnosisHistories DiagnosisHistory[]
+  comments          Comment[]
 }
 
 model Episode {
-  id         String   @id @default(uuid())
-  content    String   @db.VarChar(200)
-  created_at DateTime @default(now())
+  id         String    @id @default(uuid())
+  content    String    @db.VarChar(200)
+  created_at DateTime  @default(now())
   user_id    String
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   likes      Like[]
-  category   String   @default("日常生活")
+  comments   Comment[]
+  category   String    @default("日常生活")
   @@index([created_at])
 }
 
@@ -68,6 +70,11 @@ model Comment {
   id         String   @id @default(uuid())
   content    String   @db.Text
   created_at DateTime @default(now())
+  user_id    String
+  episode_id String
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  episode    Episode  @relation(fields: [episode_id], references: [id], onDelete: Cascade)
 
-  @@index([created_at])
+  @@index([episode_id, created_at])
+  @@index([user_id])
 }

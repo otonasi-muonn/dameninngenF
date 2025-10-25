@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import LikeButton from './LikeButton';
+import CommentSection from './CommentSection';
 import { formatUtcDateTime } from '@/utils/date';
 
 type Episode = {
@@ -164,14 +165,14 @@ export default function EpisodeSearchList({ episodes, isLoggedIn }: Props) {
                 </div>
               )}
 
-              <div style={{ 
+              <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 marginTop: '12px'
               }}>
-                <small style={{ 
-                  fontSize: '12px', 
+                <small style={{
+                  fontSize: '12px',
                   color: '#999',
                   display: 'flex',
                   gap: '12px',
@@ -194,6 +195,9 @@ export default function EpisodeSearchList({ episodes, isLoggedIn }: Props) {
                   />
                 )}
               </div>
+
+              {/* コメントセクション */}
+              <CommentSection episodeId={episode.id} isLoggedIn={isLoggedIn} />
             </div>
           ))
         ) : (
