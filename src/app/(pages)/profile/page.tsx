@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import NextImage from 'next/image'; // ★ Image → NextImage に変更
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 type Profile = {
@@ -11,6 +10,14 @@ type Profile = {
   bio: string;
   birthday: string | null;
   avatar_url: string;
+  likes_count?: number;
+  episodes_count?: number;
+  titles?: string[];          // 配列に変更
+  post_titles?: string[];     // 配列に変更
+  follower_titles?: string[];   // 追加
+  following_titles?: string[];  // 追加
+  following_count?: number;
+  followers_count?: number;
 };
 
 export default function ProfilePage() {
@@ -22,7 +29,6 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [followStats, setFollowStats] = useState<{ followingCount: number; followerCount: number } | null>(null);
 
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -65,36 +71,37 @@ export default function ProfilePage() {
     fetchProfile();
   }, [router, supabase.auth]);
 
-  useEffect(() => {
-  const fetchFollowStats = async () => {
-    if (!mounted) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const res = await fetch('/api/follow-count', {
-      method: 'POST',
-      body: JSON.stringify({ userId: user.id }),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      setFollowStats(data);
-    }
-  };
-
-  fetchFollowStats();
-}, [mounted]);
-
   const birthdayDisplay = useMemo(() => {
     if (!profile?.birthday) return '未設定';
     return new Date(profile.birthday).toLocaleDateString('ja-JP');
   }, [profile?.birthday]);
 
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+
+    if (file.size > 500_000) {
+      setError('画像サイズは500KB以下にしてください');
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      const previewUrl = URL.createObjectURL(file);
+      setAvatarPreview(previewUrl);
+      const compressedBase64 = await compressImage(file, 256, 256, 0.8);
+      setAvatar(compressedBase64);
+      setError('');
+    } catch (err) {
+      console.error('Image compression error:', err);
+      setError('画像の処理に失敗しました');
+    }
+  };
+
   const compressImage = (file: File, maxWidth: number, maxHeight: number, quality: number): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        // ★ ブラウザネイティブの Image を使用（HTMLImageElement）
         const img = document.createElement('img');
         img.onload = () => {
           const canvas = document.createElement('canvas');
@@ -128,29 +135,6 @@ export default function ProfilePage() {
     });
   };
 
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    if (!file) return;
-
-    if (file.size > 500_000) {
-      setError('画像サイズは500KB以下にしてください');
-      e.target.value = '';
-      return;
-    }
-
-    try {
-      const previewUrl = URL.createObjectURL(file);
-      setAvatarPreview(previewUrl);
-
-      const compressedBase64 = await compressImage(file, 256, 256, 0.8);
-      setAvatar(compressedBase64);
-      setError('');
-    } catch (err) {
-      console.error('Image compression error:', err);
-      setError('画像の処理に失敗しました');
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -177,6 +161,49 @@ export default function ProfilePage() {
     }
   };
 
+  // 称号の見た目マップ
+  const getTitleStyle = (title: string) => {
+    switch (title) {
+      case '神':                return { bg: 'bg-gradient-to-r from-yellow-400 via-red-400 to-pink-500 text-white shadow-lg', icon: '✨' };
+      case 'カリスマ':          return { bg: 'bg-gradient-to-r from-purple-400 to-pink-400 text-white', icon: '💎' };
+      case 'インフルエンサー':  return { bg: 'bg-gradient-to-r from-blue-400 to-cyan-400 text-white', icon: '🌟' };
+      case 'エース':            return { bg: 'bg-gradient-to-r from-green-400 to-teal-400 text-white', icon: '🔥' };
+      case 'レジェンド':        return { bg: 'bg-gradient-to-r from-purple-300 to-pink-300 text-purple-900', icon: '👑' };
+      case 'スーパースター':    return { bg: 'bg-gradient-to-r from-yellow-200 to-orange-200 text-orange-900', icon: '⭐' };
+      case '人気者':            return { bg: 'bg-yellow-100 text-yellow-800', icon: '🏅' };
+      case '伝説の語り部':      return { bg: 'bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg', icon: '📜' };
+      case 'エピソード王':      return { bg: 'bg-gradient-to-r from-violet-400 to-purple-500 text-white', icon: '📚' };
+      case 'ストーリーテラー':  return { bg: 'bg-gradient-to-r from-pink-400 to-rose-400 text-white', icon: '🎭' };
+      case 'エリート投稿者':    return { bg: 'bg-gradient-to-r from-cyan-400 to-blue-400 text-white', icon: '🎖️' };
+      case 'マスター投稿者':    return { bg: 'bg-gradient-to-r from-indigo-300 to-purple-300 text-indigo-900', icon: '🏆' };
+      case 'ベテラン投稿者':    return { bg: 'bg-gradient-to-r from-blue-200 to-indigo-200 text-indigo-900', icon: '🎖️' };
+      case '常連投稿者':        return { bg: 'bg-blue-100 text-blue-800', icon: '✍️' };
+      // 追加
+      case '初いいね獲得':      return { bg: 'bg-green-100 text-green-800', icon: '🎉' };
+      case '初投稿':            return { bg: 'bg-teal-100 text-teal-800', icon: '🆕' };
+
+      case '神推し': return { bg: 'bg-gradient-to-r from-yellow-300 to-rose-400 text-white', icon: '👥' };
+    case 'フォロワーカリスマ': return { bg: 'bg-gradient-to-r from-purple-300 to-fuchsia-400 text-white', icon: '💠' };
+    case 'フォロワーインフルエンサー': return { bg: 'bg-gradient-to-r from-sky-300 to-cyan-400 text-white', icon: '📣' };
+    case 'フォロワーエース': return { bg: 'bg-gradient-to-r from-green-300 to-emerald-400 text-white', icon: '🛡️' };
+    case 'フォロワーレジェンド': return { bg: 'bg-gradient-to-r from-pink-200 to-purple-300 text-purple-900', icon: '🏆' };
+    case 'フォロワースーパースター': return { bg: 'bg-gradient-to-r from-amber-200 to-orange-300 text-orange-900', icon: '🌠' };
+    case 'フォロワー人気者': return { bg: 'bg-yellow-100 text-yellow-800', icon: '🙌' };
+    case '初フォロワー獲得': return { bg: 'bg-rose-100 text-rose-800', icon: '🎊' };
+
+    // フォロー中系
+    case 'コネクト神': return { bg: 'bg-gradient-to-r from-indigo-400 to-blue-500 text-white', icon: '🔗' };
+    case 'コミュニティマスター': return { bg: 'bg-gradient-to-r from-indigo-300 to-purple-400 text-white', icon: '👥' };
+    case 'スーパーネットワーカー': return { bg: 'bg-gradient-to-r from-teal-300 to-emerald-400 text-white', icon: '🧭' };
+    case 'ネットワーカー': return { bg: 'bg-gradient-to-r from-teal-200 to-cyan-300 text-teal-900', icon: '🤝' };
+    case 'コネクター': return { bg: 'bg-gradient-to-r from-blue-200 to-indigo-300 text-indigo-900', icon: '🪢' };
+    case 'コミュニティビルダー': return { bg: 'bg-gradient-to-r from-sky-200 to-teal-300 text-sky-900', icon: '🏗️' };
+    case '交流好き': return { bg: 'bg-green-100 text-green-800', icon: '💬' };
+    case '初フォロー': return { bg: 'bg-lime-100 text-lime-800', icon: '✨' };
+    default: return { bg: 'bg-gray-100 text-gray-800', icon: '🔖' };
+  }
+};
+
   if (!mounted) return null;
   if (loading) {
     return (
@@ -195,6 +222,13 @@ export default function ProfilePage() {
     );
   }
   if (!profile) return null;
+
+  const allTitles = [
+    ...(profile?.titles ?? []),
+    ...(profile?.post_titles ?? []),
+    ...(profile?.follower_titles ?? []),   // ★これがあるか確認
+    ...(profile?.following_titles ?? []),  // ★これがあるか確認
+  ];
 
   return (
     <div className="container mx-auto p-4">
@@ -285,17 +319,9 @@ export default function ProfilePage() {
             </form>
           ) : (
             <div className="space-y-5">
-              <div className="flex items-center justify-center gap-6">
-                {/* フォロー中 */}
-                {followStats && (
-                  <div className="text-center">
-                    <p className="text-sm text-blue-700 font-medium">フォロー中</p>
-                    <p className="text-xl font-bold text-blue-800">{followStats.followingCount}</p>
-                  </div>
-                )}
-
-                {/* アバター画像 */}
-                <div className="w-32 h-32 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center shadow">
+              {/* アバターの下に称号バッジ */}
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-32 h-32 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
                   {profile.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={profile.avatar_url} alt="avatar" className="w-full h-full object-cover" />
@@ -304,15 +330,32 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                {/* フォロワー */}
-                {followStats && (
-                  <div className="text-center">
-                    <p className="text-sm text-pink-700 font-medium">フォロワー</p>
-                    <p className="text-xl font-bold text-pink-800">{followStats.followerCount}</p>
+                {/* すべての称号を表示 */}
+                {allTitles.length > 0 && (
+                  <div className="flex justify-center gap-2 flex-wrap">
+                    {allTitles.map((t, idx) => {
+                      const style = getTitleStyle(t);
+                      return (
+                        <span key={idx} className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${style.bg}`}>
+                          {style.icon} {t}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* フォロー数/フォロワー数 */}
+                {(typeof profile.following_count === 'number' || typeof profile.followers_count === 'number') && (
+                  <div className="flex items-center justify-center gap-8 text-sm">
+                    <div className="text-indigo-600 font-semibold">
+                      フォロー中 <span className="ml-1 text-xl">{profile.following_count ?? 0}</span>
+                    </div>
+                    <div className="text-pink-700 font-semibold">
+                      フォロワー <span className="ml-1 text-xl">{profile.followers_count ?? 0}</span>
+                    </div>
                   </div>
                 )}
               </div>
-
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
@@ -335,14 +378,10 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">誕生日</label>
                 <div className="p-2 bg-gray-50 rounded">{birthdayDisplay}</div>
               </div>
-              {followStats && (
-              <div className="flex space-x-6 pt-2">
-      
-                </div>
-                
-              )}</div>
+            </div>
           )}
-         </div>
         </div>
       </div>
-  )};
+    </div>
+  );
+}
