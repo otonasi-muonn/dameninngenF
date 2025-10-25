@@ -14,6 +14,8 @@ type Profile = {
   episodes_count?: number;
   titles?: string[];          // 配列に変更
   post_titles?: string[];     // 配列に変更
+  follower_titles?: string[];   // 追加
+  following_titles?: string[];  // 追加
   following_count?: number;
   followers_count?: number;
 };
@@ -179,9 +181,28 @@ export default function ProfilePage() {
       // 追加
       case '初いいね獲得':      return { bg: 'bg-green-100 text-green-800', icon: '🎉' };
       case '初投稿':            return { bg: 'bg-teal-100 text-teal-800', icon: '🆕' };
-      default:                  return { bg: 'bg-gray-100 text-gray-800', icon: '🔖' };
-    }
-  };
+
+      case '神推し': return { bg: 'bg-gradient-to-r from-yellow-300 to-rose-400 text-white', icon: '👥' };
+    case 'フォロワーカリスマ': return { bg: 'bg-gradient-to-r from-purple-300 to-fuchsia-400 text-white', icon: '💠' };
+    case 'フォロワーインフルエンサー': return { bg: 'bg-gradient-to-r from-sky-300 to-cyan-400 text-white', icon: '📣' };
+    case 'フォロワーエース': return { bg: 'bg-gradient-to-r from-green-300 to-emerald-400 text-white', icon: '🛡️' };
+    case 'フォロワーレジェンド': return { bg: 'bg-gradient-to-r from-pink-200 to-purple-300 text-purple-900', icon: '🏆' };
+    case 'フォロワースーパースター': return { bg: 'bg-gradient-to-r from-amber-200 to-orange-300 text-orange-900', icon: '🌠' };
+    case 'フォロワー人気者': return { bg: 'bg-yellow-100 text-yellow-800', icon: '🙌' };
+    case '初フォロワー獲得': return { bg: 'bg-rose-100 text-rose-800', icon: '🎊' };
+
+    // フォロー中系
+    case 'コネクト神': return { bg: 'bg-gradient-to-r from-indigo-400 to-blue-500 text-white', icon: '🔗' };
+    case 'コミュニティマスター': return { bg: 'bg-gradient-to-r from-indigo-300 to-purple-400 text-white', icon: '👥' };
+    case 'スーパーネットワーカー': return { bg: 'bg-gradient-to-r from-teal-300 to-emerald-400 text-white', icon: '🧭' };
+    case 'ネットワーカー': return { bg: 'bg-gradient-to-r from-teal-200 to-cyan-300 text-teal-900', icon: '🤝' };
+    case 'コネクター': return { bg: 'bg-gradient-to-r from-blue-200 to-indigo-300 text-indigo-900', icon: '🪢' };
+    case 'コミュニティビルダー': return { bg: 'bg-gradient-to-r from-sky-200 to-teal-300 text-sky-900', icon: '🏗️' };
+    case '交流好き': return { bg: 'bg-green-100 text-green-800', icon: '💬' };
+    case '初フォロー': return { bg: 'bg-lime-100 text-lime-800', icon: '✨' };
+    default: return { bg: 'bg-gray-100 text-gray-800', icon: '🔖' };
+  }
+};
 
   if (!mounted) return null;
   if (loading) {
@@ -202,7 +223,12 @@ export default function ProfilePage() {
   }
   if (!profile) return null;
 
-  const allTitles = [...(profile.titles ?? []), ...(profile.post_titles ?? [])];
+  const allTitles = [
+    ...(profile?.titles ?? []),
+    ...(profile?.post_titles ?? []),
+    ...(profile?.follower_titles ?? []),   // ★これがあるか確認
+    ...(profile?.following_titles ?? []),  // ★これがあるか確認
+  ];
 
   return (
     <div className="container mx-auto p-4">

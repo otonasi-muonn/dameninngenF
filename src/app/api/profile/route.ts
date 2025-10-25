@@ -43,6 +43,29 @@ export async function GET() {
     if (episodes_count >= 5)   post_titles.push('常連投稿者');
     if (episodes_count >= 1)   post_titles.push('初投稿');
 
+    // フォロワー称号（累積）
+    const follower_titles: string[] = [];
+    if (followers_count >= 100) follower_titles.push('神推し');
+    if (followers_count >= 50)  follower_titles.push('フォロワーカリスマ');
+    if (followers_count >= 40)  follower_titles.push('フォロワーインフルエンサー');
+    if (followers_count >= 30)  follower_titles.push('フォロワーエース');
+    if (followers_count >= 20)  follower_titles.push('フォロワーレジェンド');
+    if (followers_count >= 10)  follower_titles.push('フォロワースーパースター');
+    if (followers_count >= 5)   follower_titles.push('フォロワー人気者');
+    if (followers_count >= 1)   follower_titles.push('初フォロワー獲得');
+
+
+    // フォロー中称号（累積）
+    const following_titles: string[] = [];
+    if (following_count >= 100) following_titles.push('コネクト神');
+    if (following_count >= 50)  following_titles.push('コミュニティマスター');
+    if (following_count >= 40)  following_titles.push('スーパーネットワーカー');
+    if (following_count >= 30)  following_titles.push('ネットワーカー');
+    if (following_count >= 20)  following_titles.push('コネクター');
+    if (following_count >= 10)  following_titles.push('コミュニティビルダー');
+    if (following_count >= 5)   following_titles.push('交流好き');
+    if (following_count >= 1)   following_titles.push('初フォロー');
+
     return NextResponse.json({
       name: dbUser?.name ?? '',
       bio: dbUser?.bio ?? '',
@@ -55,6 +78,8 @@ export async function GET() {
       followers_count,
       titles,           // 配列で返す
       post_titles,      // 配列で返す
+      follower_titles,
+      following_titles,
     });
   } catch (e) {
     console.error('Profile GET error:', e);
@@ -130,6 +155,27 @@ export async function POST(req: Request) {
     if (episodes_count >= 5)   post_titles.push('常連投稿者');
     if (episodes_count >= 1)   post_titles.push('初投稿');
 
+
+    const follower_titles: string[] = [];
+    if (followers_count >= 100) follower_titles.push('神推し');
+    if (followers_count >= 50)  follower_titles.push('フォロワーカリスマ');
+    if (followers_count >= 40)  follower_titles.push('フォロワーインフルエンサー');
+    if (followers_count >= 30)  follower_titles.push('フォロワーエース');
+    if (followers_count >= 20)  follower_titles.push('フォロワーレジェンド');
+    if (followers_count >= 10)  follower_titles.push('フォロワースーパースター');
+    if (followers_count >= 5)   follower_titles.push('フォロワー人気者');
+    if (followers_count >= 1)   follower_titles.push('初フォロワー獲得');
+
+    const following_titles: string[] = [];
+    if (following_count >= 100) following_titles.push('コネクト神');
+    if (following_count >= 50)  following_titles.push('コミュニティマスター');
+    if (following_count >= 40)  following_titles.push('スーパーネットワーカー');
+    if (following_count >= 30)  following_titles.push('ネットワーカー');
+    if (following_count >= 20)  following_titles.push('コネクター');
+    if (following_count >= 10)  following_titles.push('コミュニティビルダー');
+    if (following_count >= 5)   following_titles.push('交流好き');
+    if (following_count >= 1)   following_titles.push('初フォロー');
+
     return NextResponse.json({
       name: updated.name ?? '',
       bio: updated.bio ?? '',
@@ -142,6 +188,8 @@ export async function POST(req: Request) {
       followers_count,
       titles,
       post_titles,
+      follower_titles,
+      following_titles,
     });
   } catch (e) {
     console.error('Profile POST error:', e);
