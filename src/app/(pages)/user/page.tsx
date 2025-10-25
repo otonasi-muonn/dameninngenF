@@ -3,8 +3,6 @@ import { cookies } from 'next/headers';
 import FollowButton from '@/components/ui/FollowButton';
 import { prisma } from '@/lib/prisma';
 
-type UserItem = { id: string; name?: string | null };
-
 
 
 export default async function UserPage() {
