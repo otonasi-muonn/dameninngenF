@@ -19,7 +19,8 @@ export async function GET(
       where: { id: userId },
       select: {
         id: true,
-        name: true
+        name: true,
+        avatar_url: true
       }
     });
 
@@ -83,7 +84,8 @@ export async function GET(
     return NextResponse.json({
       user: {
         id: dbUser.id,
-        name: dbUser.name
+        name: dbUser.name,
+        avatar_url: dbUser.avatar_url
       },
       totalLikes,
       rank: rankInfo,

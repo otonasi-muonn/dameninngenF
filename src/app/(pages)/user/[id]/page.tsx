@@ -24,7 +24,8 @@ export default async function UserProfilePage({ params }: Props) {
     where: { id: userId },
     select: {
       id: true,
-      name: true
+      name: true,
+      avatar_url: true
     }
   });
 
@@ -109,16 +110,56 @@ export default async function UserProfilePage({ params }: Props) {
         backgroundColor: '#fff',
         marginBottom: '30px'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold' }}>
-              {dbUser.name || '名無しさん'}
-            </h1>
-            {isOwnProfile && (
-              <p style={{ margin: '5px 0 0 0', color: '#666', fontSize: '14px' }}>
-                あなたのプロフィール
-              </p>
-            )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            {/* アバター画像 */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              overflow: 'hidden',
+              backgroundColor: '#e0e0e0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              {dbUser.avatar_url ? (
+                <img
+                  src={dbUser.avatar_url}
+                  alt={dbUser.name || '名無しさん'}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <span style={{ fontSize: '40px' }}>👤</span>
+              )}
+            </div>
+            <div>
+              <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold' }}>
+                {dbUser.name || '名無しさん'}
+              </h1>
+              {/* 称号バッジ */}
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginTop: '8px',
+                padding: '6px 12px',
+                borderRadius: '20px',
+                backgroundColor: rankInfo.color,
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: '#fff'
+              }}>
+                <span>{rankInfo.icon}</span>
+                <span>{rankInfo.name} (ランク {rankInfo.rank})</span>
+              </div>
+              {isOwnProfile && (
+                <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: '14px' }}>
+                  あなたのプロフィール
+                </p>
+              )}
+            </div>
           </div>
           {!isOwnProfile && currentUserId && (
             <FollowButton userId={userId} isInitiallyFollowing={isFollowing} />
