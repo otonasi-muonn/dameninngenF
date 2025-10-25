@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import ActivityCalendar from '@/components/ui/ActivityCalendar';
 
 type Profile = {
   name: string;
@@ -382,6 +383,13 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* アクティビティカレンダー */}
+      {!isEditing && (
+        <div className="max-w-2xl mx-auto mt-6">
+          <ActivityCalendar />
+        </div>
+      )}
     </div>
   );
 }
