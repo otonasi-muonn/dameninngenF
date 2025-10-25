@@ -63,3 +63,11 @@ model DiagnosisHistory {
 
   @@index([user_id, created_at])
 }
+
+model Comment {
+  id         String   @id @default(uuid())
+  content    String   @db.Text
+  created_at DateTime @default(now())
+
+  @@index([created_at])
+}
