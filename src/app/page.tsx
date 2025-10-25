@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import EpisodeSearchList from '@/components/ui/EpisodeSearchList';
+import DameningenDiagnosis from '@/components/ui/DameningenDiagnosis';
 
 export default async function HomePage() {
   const supabase = createServerComponentClient({ cookies });
@@ -157,6 +158,9 @@ export default async function HomePage() {
           </Link>
         </div>
       )}
+
+      {/* ダメ人間度診断 */}
+      <DameningenDiagnosis />
 
       {/* エピソード一覧（検索機能付き） */}
       <EpisodeSearchList episodes={episodes} isLoggedIn={!!user} />
