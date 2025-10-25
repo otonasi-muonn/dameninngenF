@@ -1,88 +1,106 @@
-'use client'; // ユーザー操作を受け付けるので、クライアントコンポーレントにする
+'use client';
 
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import Link from 'next/link';
 
 export default function LoginPage() {
+  const router = useRouter();
+  const supabase = createClientComponentClient();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
-  // フォームが送信されたときの処理
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // ページリロードを防ぐ
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     setError('');
+    setLoading(true);
 
-    // ログインAPIにリクエストを送信
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (res.ok) {
-      // ログインが成功したら、トップページに遷移させる
+      if (error) throw error;
       router.push('/');
-      router.refresh(); // サーバー側の状態を更新して、ログイン状態をページに反映させる
-    } else {
-      // 失敗したらエラーメッセージを表示 (例: パスワード間違い)
-      const data = await res.json();
-      setError(data.error || 'ログインに失敗しました。');
+      router.refresh();
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err instanceof Error ? err.message : 'ログインに失敗しました');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div>
-      <h1>ログイン</h1>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginTop: '10px' }}>
-          <label htmlFor="email">メールアドレス:</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ border: '1px solid black', marginLeft: '5px' }}
-          />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-4 py-8">
+      <div className="w-full max-w-md">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* ヘッダー */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-center">
+            <h1 className="text-3xl font-bold text-white">ログイン</h1>
+          </div>
+
+          {/* フォーム */}
+          <div className="p-8">
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  メールアドレス
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="example@example.com"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  パスワード
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold py-3 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+              >
+                {loading ? '処理中...' : 'ログイン'}
+              </button>
+            </form>
+
+            <div className="mt-8 text-center text-sm text-gray-600">
+              アカウントをお持ちでない方は{' '}
+              <Link href="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+                新規登録
+              </Link>
+            </div>
+          </div>
         </div>
-        <div style={{ marginTop: '10px' }}>
-          <label htmlFor="password">パスワード:</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ border: '1px solid black', marginLeft: '5px' }}
-          />
-        </div>
-        <button type="submit" style={{ marginTop: '20px', border: '1px solid black', padding: '5px' }}>
-          ログイン
-        </button>
-      </form>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      
-      <div style={{ marginTop: '20px', textAlign: 'left' }}>
-        <p>アカウントをお持ちでない方は</p>
-        <button
-          type="button"
-          onClick={() => router.push('/register')}
-          style={{
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontSize: '14px'
-          }}
-        >
-          新規登録はこちら
-        </button>
       </div>
     </div>
   );
