@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import EpisodeSearchList from '@/components/ui/EpisodeSearchList';
 import DameningenDiagnosis from '@/components/ui/DameningenDiagnosis';
+import DiagnosisHistory from '@/components/ui/DiagnosisHistory';
 import { calculateRank, getRankColor } from '@/lib/rank';
 
 export default async function HomePage() {
@@ -198,6 +199,9 @@ export default async function HomePage() {
 
       {/* ダメ人間度診断 */}
       <DameningenDiagnosis />
+
+      {/* 診断履歴（ログインユーザーのみ） */}
+      {user && <DiagnosisHistory />}
 
       {/* エピソード一覧（検索機能付き） */}
       <EpisodeSearchList episodes={episodes} isLoggedIn={!!user} />

@@ -1,69 +1,56 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit';
 
-// レート制限の設定
-const RATE_LIMIT_WINDOW = 60 * 1000; // 1分
-const RATE_LIMIT_MAX_REQUESTS = 10; // 1分間に10回まで
+type DiagnoseRequest = {
+  episode: string;
+};
 
-// IPアドレスごとのリクエスト履歴を保存
-const requestHistory = new Map<string, number[]>();
+type DiagnoseResponse = {
+  diagnosis: string;
+};
 
-// レート制限をチェックする関数
-function checkRateLimit(ip: string): { allowed: boolean; remainingRequests: number } {
-  const now = Date.now();
-  const userRequests = requestHistory.get(ip) || [];
+type ErrorResponse = {
+  error: string;
+};
 
-  // 1分以内のリクエストのみをフィルタリング
-  const recentRequests = userRequests.filter(timestamp => now - timestamp < RATE_LIMIT_WINDOW);
-
-  if (recentRequests.length >= RATE_LIMIT_MAX_REQUESTS) {
-    return { allowed: false, remainingRequests: 0 };
+/**
+ * 診断履歴を保存する
+ */
+async function saveDiagnosisHistory(
+  userId: string, 
+  episode: string, 
+  diagnosis: string
+): Promise<void> {
+  try {
+    await prisma.diagnosisHistory.create({
+      data: {
+        user_id: userId,
+        episode,
+        diagnosis,
+      },
+    });
+  } catch (error) {
+    console.error('Failed to save diagnosis history:', error);
   }
-
-  // 新しいリクエストを追加
-  recentRequests.push(now);
-  requestHistory.set(ip, recentRequests);
-
-  return { allowed: true, remainingRequests: RATE_LIMIT_MAX_REQUESTS - recentRequests.length };
 }
 
-export async function POST(request: NextRequest) {
-  // IPアドレスを取得
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ||
-             request.headers.get('x-real-ip') ||
-             'unknown';
-
-  // レート制限をチェック
-  const { allowed, remainingRequests } = checkRateLimit(ip);
-
-  if (!allowed) {
-    return NextResponse.json(
-      { error: '診断回数の上限に達しました。1分後に再度お試しください。' },
-      { status: 429 }
-    );
+/**
+ * Gemini APIで診断を実行する
+ */
+async function generateDiagnosis(episode: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('API key not configured');
   }
-  try {
-    const { episode } = await request.json();
 
-    if (!episode || typeof episode !== 'string') {
-      return NextResponse.json(
-        { error: 'エピソードを入力してください' },
-        { status: 400 }
-      );
-    }
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'APIキーが設定されていません' },
-        { status: 500 }
-      );
-    }
-
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
-
-    const prompt = `
+  const prompt = `
 あなたはユーモアのある診断士です。以下のエピソードを読んで、その人の「ダメ人間度」を0%から100%で診断してください。
 診断は楽しく、ポジティブなトーンで行ってください。
 
@@ -75,12 +62,57 @@ export async function POST(request: NextRequest) {
 - アドバイス: （1-2文で、前向きなアドバイス）
 `;
 
-    const result = await model.generateContent(prompt);
-    const diagnosis = result.response.text();
+  const result = await model.generateContent(prompt);
+  return result.response.text();
+}
+
+/**
+ * 認証されたユーザーを取得する
+ */
+async function getAuthenticatedUser() {
+  try {
+    const cookieStore = cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const { data } = await supabase.auth.getUser();
+    return data.user;
+  } catch (error) {
+    console.error('Auth error:', error);
+    return null;
+  }
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse<DiagnoseResponse | ErrorResponse>> {
+  const ip = getClientIp(request.headers);
+  const { allowed } = checkRateLimit(ip);
+
+  if (!allowed) {
+    return NextResponse.json(
+      { error: '診断回数の上限に達しました。1分後に再度お試しください。' },
+      { status: 429 }
+    );
+  }
+
+  try {
+    const body = await request.json() as DiagnoseRequest;
+    const { episode } = body;
+
+    if (!episode || typeof episode !== 'string' || episode.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'エピソードを入力してください' },
+        { status: 400 }
+      );
+    }
+
+    const diagnosis = await generateDiagnosis(episode);
+    const user = await getAuthenticatedUser();
+
+    if (user) {
+      await saveDiagnosisHistory(user.id, episode, diagnosis);
+    }
 
     return NextResponse.json({ diagnosis });
   } catch (error) {
-    console.error('Gemini API error:', error);
+    console.error('Diagnosis error:', error);
     return NextResponse.json(
       { error: '診断に失敗しました。もう一度お試しください。' },
       { status: 500 }

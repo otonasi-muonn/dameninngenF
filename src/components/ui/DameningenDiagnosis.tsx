@@ -2,29 +2,26 @@
 
 import { useState } from 'react';
 
-// 定数定義
 const TWITTER_MAX_LENGTH = 280;
 const EPISODE_MAX_DISPLAY_LENGTH = 60;
 const HASHTAG = '\n\n#ダメ人間度診断';
 
-// シェアテキスト生成関数
+/**
+ * Xシェア用のテキストを生成
+ */
 function createShareText(episode: string, diagnosis: string): string {
   const maxLength = TWITTER_MAX_LENGTH - HASHTAG.length;
   
-  // エピソードを切り詰め
   const episodeText = episode.length > EPISODE_MAX_DISPLAY_LENGTH
     ? `${episode.substring(0, EPISODE_MAX_DISPLAY_LENGTH)}...`
     : episode;
 
-  // ダメ人間度を抽出
   const percentMatch = diagnosis.match(/[-・]?\s*ダメ人間度[:：]\s*(\d+)%/);
   const percent = percentMatch?.[1] || '';
 
-  // 診断結果部分を抽出（アドバイス除外）
   const diagnosisMatch = diagnosis.match(/[-・]?\s*診断結果[:：]\s*([\s\S]+?)(?=\n[-・]?\s*アドバイス|$)/);
   const diagnosisComment = diagnosisMatch?.[1]?.trim() || diagnosis;
 
-  // 基本テキストを構築
   let shareText = `【エピソード】\n${episodeText}\n\n`;
   
   if (percent) {
@@ -33,10 +30,9 @@ function createShareText(episode: string, diagnosis: string): string {
   
   shareText += `診断結果: ${diagnosisComment}`;
 
-  // 長さ制限を超える場合は診断結果を短縮
   if (shareText.length > maxLength) {
     const baseText = `【エピソード】\n${episodeText}\n\n${percent ? `ダメ人間度: ${percent}%\n診断結果: ` : '診断結果: '}`;
-    const remainingLength = maxLength - baseText.length - 3; // "..."分を引く
+    const remainingLength = maxLength - baseText.length - 3;
     const shortComment = diagnosisComment.substring(0, Math.max(0, remainingLength)) + '...';
     shareText = baseText + shortComment;
   }
@@ -44,10 +40,12 @@ function createShareText(episode: string, diagnosis: string): string {
   return shareText + HASHTAG;
 }
 
-// Xシェア関数
+/**
+ * Xでシェアする
+ */
 function shareToX(text: string): void {
-  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-  window.open(twitterUrl, '_blank', 'noopener,noreferrer');
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 export default function DameningenDiagnosis() {
