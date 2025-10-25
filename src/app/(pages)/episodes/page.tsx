@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import PostForm from '@/components/ui/PostForm';
+import CommentForm from '@/components/ui/CommentForm';
+
 // Define a lightweight local type matching the fields we use in this component
 type EpisodeItem = {
   id: string;
@@ -11,6 +13,12 @@ type EpisodeItem = {
   user?: { name?: string | null } | null;
   _count: { likes: number };
   likes: Array<{ user_id: string }>;
+  comments?: Array<{
+    id: string;
+    content: string;
+    created_at: string | Date;
+    user?: { name?: string | null } | null;
+  }>;
 };
 
 export default async function EpisodesPage() {
@@ -25,16 +33,22 @@ export default async function EpisodesPage() {
   }) : null;
 
   // 自分の投稿のみを取得
-  const myEpisodes = userId ? await prisma.episode.findMany({
-    where: { user_id: userId },
-    orderBy: { created_at: 'desc' },
-    include: {
-      user: { select: { name: true } },
-      _count: { select: { likes: true } },
-      likes: { where: { user_id: userId }, select: { user_id: true } },
-    },
-  }) : [];
-
+    let myEpisodes: EpisodeItem[] = [];
+    if (userId) {
+      myEpisodes = await prisma.episode.findMany({
+        where: { user_id: userId },
+        orderBy: { created_at: 'desc' },
+        include: {
+          user: { select: { name: true } },
+          _count: { select: { likes: true } },
+          likes: { where: { user_id: userId }, select: { user_id: true } },
+          comments: {
+            include: { user: { select: { name: true } } },
+            orderBy: { created_at: 'asc' },
+          },
+        },
+      });
+    }
   return (
     <div style={{ padding: 16 }}>
       <h1>ダメ人間エピソード投稿</h1>
@@ -77,8 +91,7 @@ export default async function EpisodesPage() {
                   </div>
                 </div>
               </div>
-            ))
-          ) : (
+            )) ) : (
             <div style={{ 
               border: '1px dashed #ccc', 
               padding: 20, 

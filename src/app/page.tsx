@@ -1,3 +1,4 @@
+
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
@@ -37,22 +38,45 @@ export default async function HomePage() {
   }
 
   // サーバーサイドでエピソード一覧を取得
-  const episodes = await prisma.episode.findMany({
-    orderBy: { created_at: 'desc' },
-    include: {
-      user: {
-        select: { name: true },
+  let episodes = [];
+  try {
+    episodes = await prisma.episode.findMany({
+      orderBy: { created_at: 'desc' },
+      include: {
+        user: { select: { name: true } },
+        _count: { select: { likes: true } },
+        likes: {
+          where: { user_id: userId || '' },
+          select: { user_id: true },
+        },
+        comments: {
+          include: { user: { select: { name: true } } },
+          orderBy: { created_at: 'asc' },
+        },
       },
-      _count: {
-        select: { likes: true },
+    });
+  } catch (fetchErr) {
+    // DB に Comment テーブルが存在しない等で失敗する環境があるため、安全にフォールバックして再取得します。
+    // 本番でテーブルが存在する前提ならこの catch は不要ですが、開発環境の差異に対応するために追加します。
+    // eslint-disable-next-line no-console
+    console.warn('episodes.findMany(include: comments) failed, retrying without comments:', String(fetchErr));
+    episodes = await prisma.episode.findMany({
+      orderBy: { created_at: 'desc' },
+      include: {
+        user: { select: { name: true } },
+        _count: { select: { likes: true } },
+        likes: {
+          where: { user_id: userId || '' },
+          select: { user_id: true },
+        },
+        // comments を含めないフォールバック
       },
-      likes: {
-        where: { user_id: userId || '' },
-        select: { user_id: true },
-      },
-    },
-  });
+    });
+    // コメントが無い環境向けに型を満たすため、空配列を補っておく
+    episodes = episodes.map((ep) => ({ ...ep, comments: [] }));
+  }
 
+ 
   return (
     <div style={{ 
       maxWidth: '1200px', 
@@ -198,7 +222,6 @@ export default async function HomePage() {
 
       {/* ダメ人間度診断 */}
       <DameningenDiagnosis />
-
       {/* エピソード一覧（検索機能付き） */}
       <EpisodeSearchList episodes={episodes} isLoggedIn={!!user} />
     </div>

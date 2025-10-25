@@ -15,6 +15,7 @@ model User {
   bio        String?
   birthday   DateTime?
   episodes   Episode[]
+  comments   Comment[]
   following  Follow[]  @relation("Following")
   followedBy Follow[]  @relation("FollowedBy")
   likes      Like[]
@@ -27,6 +28,7 @@ model Episode {
   user_id    String
   user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   likes      Like[]
+  comments   Comment[]
   category   String   @default("日常生活")
   @@index([created_at])
 }
@@ -50,4 +52,14 @@ model Follow {
   following   User     @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@id([followerId, followingId])
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  content    String
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id])
+  user_id    String
+  episode    Episode  @relation(fields: [episode_id], references: [id])
+  episode_id String
 }
