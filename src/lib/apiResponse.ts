@@ -21,6 +21,16 @@ export function badRequestResponse(message: string): NextResponse {
 }
 
 /**
+ * 403 Forbidden レスポンスを返す
+ */
+export function forbiddenResponse(message: string = 'Forbidden'): NextResponse {
+  return NextResponse.json(
+    { error: message },
+    { status: 403 }
+  );
+}
+
+/**
  * 404 Not Found レスポンスを返す
  */
 export function notFoundResponse(message: string = 'Not found'): NextResponse {

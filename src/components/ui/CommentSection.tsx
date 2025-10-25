@@ -16,9 +16,10 @@ type Comment = {
 type CommentSectionProps = {
   episodeId: string;
   isLoggedIn: boolean;
+  currentUserId?: string;
 };
 
-export default function CommentSection({ episodeId, isLoggedIn }: CommentSectionProps) {
+export default function CommentSection({ episodeId, isLoggedIn, currentUserId }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -74,6 +75,30 @@ export default function CommentSection({ episodeId, isLoggedIn }: CommentSection
     }
   };
 
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('このコメントを削除しますか？')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // 削除成功したらリストから削除
+        setComments(comments.filter(comment => comment.id !== commentId));
+        alert('コメントを削除しました');
+      } else {
+        const error = await response.json();
+        alert(error.error || 'コメントの削除に失敗しました');
+      }
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      alert('コメントの削除に失敗しました');
+    }
+  };
+
   return (
     <div style={{ marginTop: '10px' }}>
       <button
@@ -105,7 +130,7 @@ export default function CommentSection({ episodeId, isLoggedIn }: CommentSection
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '15px' }}>
                   {comments.map((comment) => (
-                    <div key={comment.id} style={{ display: 'flex', gap: '10px' }}>
+                    <div key={comment.id} style={{ display: 'flex', gap: '10px', position: 'relative' }}>
                       {/* アバター */}
                       <div style={{
                         width: '32px',
@@ -143,6 +168,33 @@ export default function CommentSection({ episodeId, isLoggedIn }: CommentSection
                           {comment.content}
                         </p>
                       </div>
+
+                      {/* 削除ボタン（自分のコメントの場合のみ） */}
+                      {currentUserId && comment.user.id === currentUserId && (
+                        <button
+                          onClick={() => handleDeleteComment(comment.id)}
+                          style={{
+                            background: '#dc3545',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            padding: '4px 8px',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            height: 'fit-content',
+                            transition: 'background 0.2s'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = '#c82333';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = '#dc3545';
+                          }}
+                        >
+                          削除
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>

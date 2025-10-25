@@ -40,7 +40,12 @@ export default async function HomePage() {
   // サーバーサイドでエピソード一覧を取得
   const episodes = await prisma.episode.findMany({
     orderBy: { created_at: 'desc' },
-    include: {
+    select: {
+      id: true,
+      content: true,
+      category: true,
+      created_at: true,
+      user_id: true,
       user: {
         select: { name: true },
       },
@@ -204,7 +209,7 @@ export default async function HomePage() {
       {user && <DiagnosisHistory />}
 
       {/* エピソード一覧（検索機能付き） */}
-      <EpisodeSearchList episodes={episodes} isLoggedIn={!!user} />
+      <EpisodeSearchList episodes={episodes} isLoggedIn={!!user} currentUserId={userId} />
     </div>
   );
 }
