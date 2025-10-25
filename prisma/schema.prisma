@@ -9,15 +9,16 @@ datasource db {
 }
 
 model User {
-  id         String    @id
-  name       String?
-  avatar_url String?
-  bio        String?
-  birthday   DateTime?
-  episodes   Episode[]
-  following  Follow[]  @relation("Following")
-  followedBy Follow[]  @relation("FollowedBy")
-  likes      Like[]
+  id                String             @id
+  name              String?
+  avatar_url        String?
+  bio               String?
+  birthday          DateTime?
+  episodes          Episode[]
+  following         Follow[]           @relation("Following")
+  followedBy        Follow[]           @relation("FollowedBy")
+  likes             Like[]
+  diagnosisHistories DiagnosisHistory[]
 }
 
 model Episode {
@@ -50,4 +51,15 @@ model Follow {
   following   User     @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@id([followerId, followingId])
+}
+
+model DiagnosisHistory {
+  id         String   @id @default(uuid())
+  user_id    String
+  episode    String   @db.Text
+  diagnosis  String   @db.Text
+  created_at DateTime @default(now())
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, created_at])
 }
