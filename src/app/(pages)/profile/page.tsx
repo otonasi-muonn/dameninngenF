@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import NextImage from 'next/image'; // ★ Image → NextImage に変更
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import Link from 'next/link';
 
 type Profile = {
   name: string;
@@ -306,10 +307,11 @@ export default function ProfilePage() {
 
                 {/* フォロワー */}
                 {followStats && (
-                  <div className="text-center">
-                    <p className="text-sm text-pink-700 font-medium">フォロワー</p>
-                    <p className="text-xl font-bold text-pink-800">{followStats.followerCount}</p>
-                  </div>
+                  
+                   <Link href="/allfollowers" className="text-center hover:underline text-pink-700">
+                    <p className="text-sm font-medium">フォロワー</p>
+                    <p className="text-xl font-bold">{followStats.followerCount}</p>
+                  </Link>
                 )}
               </div>
 
