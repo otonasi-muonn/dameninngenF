@@ -2,6 +2,54 @@
 
 import { useState } from 'react';
 
+// 定数定義
+const TWITTER_MAX_LENGTH = 280;
+const EPISODE_MAX_DISPLAY_LENGTH = 60;
+const HASHTAG = '\n\n#ダメ人間度診断';
+
+// シェアテキスト生成関数
+function createShareText(episode: string, diagnosis: string): string {
+  const maxLength = TWITTER_MAX_LENGTH - HASHTAG.length;
+  
+  // エピソードを切り詰め
+  const episodeText = episode.length > EPISODE_MAX_DISPLAY_LENGTH
+    ? `${episode.substring(0, EPISODE_MAX_DISPLAY_LENGTH)}...`
+    : episode;
+
+  // ダメ人間度を抽出
+  const percentMatch = diagnosis.match(/[-・]?\s*ダメ人間度[:：]\s*(\d+)%/);
+  const percent = percentMatch?.[1] || '';
+
+  // 診断結果部分を抽出（アドバイス除外）
+  const diagnosisMatch = diagnosis.match(/[-・]?\s*診断結果[:：]\s*([\s\S]+?)(?=\n[-・]?\s*アドバイス|$)/);
+  const diagnosisComment = diagnosisMatch?.[1]?.trim() || diagnosis;
+
+  // 基本テキストを構築
+  let shareText = `【エピソード】\n${episodeText}\n\n`;
+  
+  if (percent) {
+    shareText += `ダメ人間度: ${percent}%\n`;
+  }
+  
+  shareText += `診断結果: ${diagnosisComment}`;
+
+  // 長さ制限を超える場合は診断結果を短縮
+  if (shareText.length > maxLength) {
+    const baseText = `【エピソード】\n${episodeText}\n\n${percent ? `ダメ人間度: ${percent}%\n診断結果: ` : '診断結果: '}`;
+    const remainingLength = maxLength - baseText.length - 3; // "..."分を引く
+    const shortComment = diagnosisComment.substring(0, Math.max(0, remainingLength)) + '...';
+    shareText = baseText + shortComment;
+  }
+
+  return shareText + HASHTAG;
+}
+
+// Xシェア関数
+function shareToX(text: string): void {
+  const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  window.open(twitterUrl, '_blank', 'noopener,noreferrer');
+}
+
 export default function DameningenDiagnosis() {
   const [isOpen, setIsOpen] = useState(false);
   const [episode, setEpisode] = useState('');
@@ -210,9 +258,44 @@ export default function DameningenDiagnosis() {
                 lineHeight: '1.8',
                 color: '#2d3748',
                 fontSize: '15px',
+                marginBottom: '20px',
               }}>
                 {diagnosis}
               </div>
+
+              {/* Xシェアボタン */}
+              <button
+                onClick={() => shareToX(createShareText(episode, diagnosis))}
+                style={{
+                  width: '100%',
+                  padding: '12px 20px',
+                  background: 'linear-gradient(135deg, #1DA1F2 0%, #0d8bd9 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '15px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 12px rgba(29, 161, 242, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                </svg>
+                Xでシェア
+              </button>
             </div>
           )}
         </div>
