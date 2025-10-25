@@ -21,7 +21,7 @@ export default async function EpisodesPage() {
   // ログインユーザーの情報を取得
   const currentUser = userId ? await prisma.user.findUnique({
     where: { id: userId },
-    select: { name: true }
+    select: { name: true, avatar_url: true }
   }) : null;
 
   // 自分の投稿のみを取得
@@ -37,11 +37,41 @@ export default async function EpisodesPage() {
 
   return (
     <div style={{ padding: 16 }}>
-      <h1>ダメ人間エピソード投稿</h1>
+      <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
+        ダメ人間エピソード投稿
+      </h1>
 
       {user ? (
         <div>
-          <p>投稿者: {currentUser?.name || user.email}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+  {currentUser?.avatar_url ? (
+    <img
+      src={currentUser.avatar_url}
+      alt="avatar"
+      style={{ width: '40px', height: '40px', borderRadius: '50%' }}
+    />
+  ) : (
+    <div
+      style={{
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        backgroundColor: '#ccc',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '24px',
+      }}
+    >
+      👤
+    </div>
+  )}
+  <p style={{ fontSize: '16px', color: '#333', margin: 0 }}>
+    {currentUser?.name || user.email}
+  </p>
+</div>
+
+          
           <PostForm />
         </div>
       ) : (
@@ -60,21 +90,26 @@ export default async function EpisodesPage() {
           {myEpisodes.length > 0 ? (
             myEpisodes.map((episode: EpisodeItem) => (
               <div key={episode.id} style={{ 
-                border: '1px solid #e1e8ed', 
-                padding: 16, 
-                marginBottom: 12, 
-                borderRadius: 8,
-                backgroundColor: '#fff',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-              }}>
-                <div style={{ marginBottom: 12 }}>
-                  <p style={{ margin: 0, fontSize: '16px', lineHeight: '1.4' }}>{episode.content}</p>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#657786', fontSize: '14px' }}>
+                  border: '1px solid #e1e8ed', 
+                  padding: '16px', 
+                  marginBottom: '16px', 
+                  borderRadius: '8px',
+                  backgroundColor: '#fff',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
+                }}>
+                <p style={{ margin: 0, fontSize: '16px', lineHeight: '1.6', color: '#333' }}>
+                  {episode.content}
+                </p>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  marginTop: '12px', 
+                  fontSize: '14px', 
+                  color: '#888' 
+                }}>
                   <span>{new Date(episode.created_at).toLocaleString()}</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span>❤️ {episode._count.likes}</span>
-                  </div>
+                  <span>❤️ {episode._count.likes}</span>
                 </div>
               </div>
             ))
@@ -95,4 +130,6 @@ export default async function EpisodesPage() {
       )}
     </div>
   );
+
 }
+

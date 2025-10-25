@@ -1,26 +1,36 @@
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { badRequestResponse, unauthorizedResponse } from '@/lib/apiResponse';
 
-export async function POST(request: Request) {
-  const { email, password } = await request.json();
+type LoginRequest = {
+  email: string;
+  password: string;
+};
 
-  // Next.jsのServer Component/Route HandlerでSupabaseを扱うためのお作法
-  // これを使うと、認証成功時に自動でCookieにセッション情報を保存してくれる
-  const supabase = createRouteHandlerClient({ cookies });
+export async function POST(request: Request): Promise<NextResponse> {
+  try {
+    const body = await request.json() as LoginRequest;
+    const { email, password } = body;
 
-  // Supabase Authにメールアドレスとパスワードを渡してサインイン
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+    if (!email || !password) {
+      return badRequestResponse('メールアドレスとパスワードを入力してください');
+    }
 
-  // 認証でエラーが発生した場合 (パスワード間違いなど)
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 401 }); // 401 Unauthorized
+    const supabase = createRouteHandlerClient({ cookies });
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      return unauthorizedResponse(error.message);
+    }
+
+    return NextResponse.json({ message: 'Login successful' }, { status: 200 });
+  } catch (error) {
+    console.error('Login error:', error);
+    return unauthorizedResponse('ログインに失敗しました');
   }
-
-  // 成功した場合は、Supabaseが自動でCookieを設定してくれるので、
-  // ここでは単純に成功レスポンスを返すだけでOK
-  return NextResponse.json({ message: 'Login successful' }, { status: 200 });
 }
