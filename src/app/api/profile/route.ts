@@ -14,24 +14,34 @@ export async function GET() {
       select: { name: true, bio: true, birthday: true, avatar_url: true },
     });
 
-    // ユーザーの投稿IDを取得
-    const episodes = await prisma.episode.findMany({
-      where: { user_id: user.id },
-      select: { id: true },
-    });
-    const episodeIds = episodes.map(e => e.id);
+    // 集計
+    const [likes_count, episodes_count, following_count, followers_count] = await Promise.all([
+      prisma.like.count({ where: { episode: { user_id: user.id } } }),
+      prisma.episode.count({ where: { user_id: user.id } }),
+      prisma.follow.count({ where: { followerId: user.id } }),
+      prisma.follow.count({ where: { followingId: user.id } }),
+    ]);
 
-    // 合計いいね数
-    const likes_count = episodeIds.length
-      ? await prisma.like.count({ where: { episode_id: { in: episodeIds } } })
-      : 0;
+    // 称号を配列で（累積表示）
+    const titles: string[] = [];
+    if (likes_count >= 100) titles.push('神');
+    if (likes_count >= 50)  titles.push('カリスマ');
+    if (likes_count >= 40)  titles.push('インフルエンサー');
+    if (likes_count >= 30)  titles.push('エース');
+    if (likes_count >= 20)  titles.push('レジェンド');
+    if (likes_count >= 10)  titles.push('スーパースター');
+    if (likes_count > 5)    titles.push('人気者');
+    if (likes_count >= 1)   titles.push('初いいね獲得');
 
-    // 投稿数
-    const episodes_count = await prisma.episode.count({ where: { user_id: user.id } });
-
-    // 称号
-    const title = likes_count > 5 ? '人気者' : null;            // いいねが5超
-    const post_title = episodes_count >= 5 ? '常連投稿者' : null; // 投稿が5以上
+    const post_titles: string[] = [];
+    if (episodes_count >= 100) post_titles.push('伝説の語り部');
+    if (episodes_count >= 50)  post_titles.push('エピソード王');
+    if (episodes_count >= 40)  post_titles.push('ストーリーテラー');
+    if (episodes_count >= 30)  post_titles.push('エリート投稿者');
+    if (episodes_count >= 20)  post_titles.push('マスター投稿者');
+    if (episodes_count >= 10)  post_titles.push('ベテラン投稿者');
+    if (episodes_count >= 5)   post_titles.push('常連投稿者');
+    if (episodes_count >= 1)   post_titles.push('初投稿');
 
     return NextResponse.json({
       name: dbUser?.name ?? '',
@@ -41,8 +51,10 @@ export async function GET() {
       email: user.email ?? '',
       likes_count,
       episodes_count,
-      title,
-      post_title,
+      following_count,
+      followers_count,
+      titles,           // 配列で返す
+      post_titles,      // 配列で返す
     });
   } catch (e) {
     console.error('Profile GET error:', e);
@@ -90,21 +102,33 @@ export async function POST(req: Request) {
       select: { name: true, bio: true, birthday: true, avatar_url: true },
     });
 
-    // 最新の集計も返す
-    const episodes = await prisma.episode.findMany({
-      where: { user_id: user.id },
-      select: { id: true },
-    });
-    const episodeIds = episodes.map(e => e.id);
+    // 最新集計
+    const [likes_count, episodes_count, following_count, followers_count] = await Promise.all([
+      prisma.like.count({ where: { episode: { user_id: user.id } } }),
+      prisma.episode.count({ where: { user_id: user.id } }),
+      prisma.follow.count({ where: { followerId: user.id } }),
+      prisma.follow.count({ where: { followingId: user.id } }),
+    ]);
 
-    const likes_count = episodeIds.length
-      ? await prisma.like.count({ where: { episode_id: { in: episodeIds } } })
-      : 0;
+    const titles: string[] = [];
+    if (likes_count >= 100) titles.push('神');
+    if (likes_count >= 50)  titles.push('カリスマ');
+    if (likes_count >= 40)  titles.push('インフルエンサー');
+    if (likes_count >= 30)  titles.push('エース');
+    if (likes_count >= 20)  titles.push('レジェンド');
+    if (likes_count >= 10)  titles.push('スーパースター');
+    if (likes_count > 5)    titles.push('人気者');
+    if (likes_count >= 1)   titles.push('初いいね獲得');
 
-    const episodes_count = await prisma.episode.count({ where: { user_id: user.id } });
-
-    const title = likes_count > 5 ? '人気者' : null;
-    const post_title = episodes_count >= 5 ? '常連投稿者' : null;
+    const post_titles: string[] = [];
+    if (episodes_count >= 100) post_titles.push('伝説の語り部');
+    if (episodes_count >= 50)  post_titles.push('エピソード王');
+    if (episodes_count >= 40)  post_titles.push('ストーリーテラー');
+    if (episodes_count >= 30)  post_titles.push('エリート投稿者');
+    if (episodes_count >= 20)  post_titles.push('マスター投稿者');
+    if (episodes_count >= 10)  post_titles.push('ベテラン投稿者');
+    if (episodes_count >= 5)   post_titles.push('常連投稿者');
+    if (episodes_count >= 1)   post_titles.push('初投稿');
 
     return NextResponse.json({
       name: updated.name ?? '',
@@ -114,8 +138,10 @@ export async function POST(req: Request) {
       email: user.email ?? '',
       likes_count,
       episodes_count,
-      title,
-      post_title,
+      following_count,
+      followers_count,
+      titles,
+      post_titles,
     });
   } catch (e) {
     console.error('Profile POST error:', e);
