@@ -4,17 +4,37 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import EpisodeSearchList from '@/components/ui/EpisodeSearchList';
 import DameningenDiagnosis from '@/components/ui/DameningenDiagnosis';
+import { calculateRank, getRankColor } from '@/lib/rank';
 
 export default async function HomePage() {
   const supabase = createServerComponentClient({ cookies });
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
 
-  // ログインユーザーの情報を取得
-  const currentUser = userId ? await prisma.user.findUnique({
-    where: { id: userId },
-    select: { name: true }
-  }) : null;
+  // ログインユーザーの情報とランクを取得
+  let currentUser = null;
+  let rankInfo = null;
+  let totalLikes = 0;
+
+  if (userId) {
+    // ユーザー情報取得
+    currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true }
+    });
+
+    // 総いいね数を計算
+    const likesCount = await prisma.like.count({
+      where: {
+        episode: {
+          user_id: userId
+        }
+      }
+    });
+
+    totalLikes = likesCount;
+    rankInfo = calculateRank(totalLikes);
+  }
 
   // サーバーサイドでエピソード一覧を取得
   const episodes = await prisma.episode.findMany({
@@ -87,11 +107,28 @@ export default async function HomePage() {
             }}>
               {(currentUser?.name || user.email || '?').charAt(0).toUpperCase()}
             </div>
-            <div>
-              <p style={{ fontWeight: 'bold', margin: 0, fontSize: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <p style={{ fontWeight: 'bold', margin: 0, fontSize: '20px' }}>
                 {currentUser?.name || user.email}
               </p>
-              <p style={{ fontSize: '12px', color: '#666', margin: 0 }}>ようこそ！</p>
+              {rankInfo && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    color: getRankColor(rankInfo.rank),
+                    padding: '6px 14px',
+                    borderRadius: '8px',
+                    background: `${getRankColor(rankInfo.rank)}20`,
+                    border: `2px solid ${getRankColor(rankInfo.rank)}40`
+                  }}>
+                    Rank {rankInfo.rank}
+                  </span>
+                  <span style={{ fontSize: '14px', color: '#999' }}>
+                    {totalLikes} ❤️
+                  </span>
+                </div>
+              )}
             </div>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
