@@ -11,6 +11,10 @@ type Profile = {
   bio: string;
   birthday: string | null;
   avatar_url: string;
+  likes_count?: number;
+  episodes_count?: number;
+  title?: string | null;       // いいね称号
+  post_title?: string | null;  // 投稿数称号
 };
 
 export default function ProfilePage() {
@@ -304,6 +308,8 @@ export default function ProfilePage() {
                   )}
                 </div>
 
+          
+
                 {/* フォロワー */}
                 {followStats && (
                   <div className="text-center">
@@ -312,6 +318,21 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
+
+              {(profile.title || profile.post_title) && (
+                <div className="mt-3 flex justify-center gap-2 flex-wrap">
+                  {profile.title && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                      🏅 {profile.title}（いいね {profile.likes_count ?? 0}）
+                      </span>
+                    )}
+                    {profile.post_title && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        ✍️ {profile.post_title}（投稿 {profile.episodes_count ?? 0}）
+                      </span>
+                    )}
+                    </div>
+                  )}
 
 
               <div>
