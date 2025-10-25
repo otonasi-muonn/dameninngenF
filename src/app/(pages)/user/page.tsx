@@ -21,6 +21,7 @@ export default async function UserPage() {
     select: {
       id: true,
       name: true,
+      avatar_url: true,
       // 自分がフォローしているかを絞り込み取得（有無だけ見たいので take:1）
       followedBy: currentUserId
         ? {
