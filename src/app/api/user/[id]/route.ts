@@ -3,12 +3,25 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { calculateRank } from '@/lib/rank';
+import { notFoundResponse, serverErrorResponse } from '@/lib/apiResponse';
 
-// GET /api/user/[id] — get specific user info
+type Episode = {
+  id: string;
+  content: string;
+  created_at: Date;
+  _count: {
+    likes: number;
+  };
+};
+
+/**
+ * 特定ユーザーの情報を取得する
+ * GET /api/user/[id]
+ */
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
-) {
+): Promise<NextResponse> {
   try {
     const supabase = createRouteHandlerClient({ cookies });
     const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -25,7 +38,7 @@ export async function GET(
     });
 
     if (!dbUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return notFoundResponse('ユーザーが見つかりません');
     }
 
     // ユーザーの全エピソードの総いいね数を取得
@@ -41,7 +54,10 @@ export async function GET(
       }
     });
 
-    const totalLikes = totalLikesResult.reduce((sum: number, item: { _count: { episode_id: number } }) => sum + item._count.episode_id, 0);
+    const totalLikes = totalLikesResult.reduce(
+      (sum: number, item: { _count: { episode_id: number } }) => sum + item._count.episode_id,
+      0
+    );
 
     // ランクを計算
     const rankInfo = calculateRank(totalLikes);
@@ -92,7 +108,7 @@ export async function GET(
       followersCount,
       followingCount,
       isFollowing,
-      episodes: episodes.map((ep: { id: string; content: string; created_at: Date; _count: { likes: number } }) => ({
+      episodes: episodes.map((ep: Episode) => ({
         id: ep.id,
         content: ep.content,
         created_at: ep.created_at,
@@ -100,7 +116,7 @@ export async function GET(
       }))
     });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
+    console.error('Failed to fetch user:', error);
+    return serverErrorResponse('ユーザー情報の取得に失敗しました');
   }
 }
