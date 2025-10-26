@@ -8,7 +8,8 @@ import DiagnosisHistory from '@/components/ui/DiagnosisHistory';
 import { calculateRank, getRankColor } from '@/lib/rank';
 
 export default async function HomePage() {
-  const supabase = createServerComponentClient({ cookies });
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
 

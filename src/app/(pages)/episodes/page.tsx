@@ -14,7 +14,8 @@ type EpisodeItem = {
 };
 
 export default async function EpisodesPage() {
-  const supabase = createServerComponentClient({ cookies });
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
   const { data: { user } } = await supabase.auth.getUser();
   const userId = user?.id;
 

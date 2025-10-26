@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { unauthorizedResponse } from '@/lib/apiResponse';
 
 export async function POST(): Promise<NextResponse> {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient({ cookies: () => cookies() });
   const { data: { session } } = await supabase.auth.getSession();
   
   if (!session) {
