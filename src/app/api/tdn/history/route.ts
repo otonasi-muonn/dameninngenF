@@ -34,47 +34,48 @@ export async function GET() {
       },
     })) as LikeItem[];
 
-    // 日ごとにエピソードをグループ化して最もいいねが多いものを抽出
-  const dailyTdnMap = new Map<string, Map<string, { episode: LikeItem['episode']; count: number }>>();
-  likes.forEach((like: LikeItem) => {
-      const date = new Date(like.created_at).toISOString().split('T')[0]; // YYYY-MM-DD形式
+    // DB側で日ごとのエピソードごとのいいね数を集計し、各日で最大のものを選ぶ
+    const rows = await prisma.$queryRaw<Array<{
+      date: string;
+      episode_id: string;
+      content: string;
+      created_at: Date;
+      user_name: string | null;
+      likes: number;
+    }>>`
+      WITH daily_counts AS (
+        SELECT date_trunc('day', "created_at") AS day, "episode_id", COUNT(*)::int AS cnt
+        FROM "Like"
+        WHERE "created_at" >= ${thirtyDaysAgo}
+        GROUP BY day, "episode_id"
+      ), ranked AS (
+        SELECT day, "episode_id", cnt, ROW_NUMBER() OVER (PARTITION BY day ORDER BY cnt DESC) AS rn
+        FROM daily_counts
+      )
+      SELECT to_char(day, 'YYYY-MM-DD') AS date,
+             e."id" AS episode_id,
+             e."content" AS content,
+             e."created_at" AS created_at,
+             u."name" AS user_name,
+             r.cnt AS likes
+      FROM ranked r
+      JOIN "Episode" e ON e."id" = r."episode_id"
+      LEFT JOIN "User" u ON u."id" = e."user_id"
+      WHERE r.rn = 1
+      ORDER BY date DESC;
+    `;
 
-      if (!dailyTdnMap.has(date)) {
-        dailyTdnMap.set(date, new Map());
-      }
-
-      const episodeMap = dailyTdnMap.get(date)!;
-      const episodeId = like.episode_id;
-
-      if (!episodeMap.has(episodeId)) {
-        episodeMap.set(episodeId, { episode: like.episode, count: 0 });
-      }
-
-      episodeMap.get(episodeId)!.count++;
-    });
-
-    // 各日の最もいいねが多いエピソードを取得
-    const tdnHistory = Array.from(dailyTdnMap.entries())
-      .map(([date, episodeMap]) => {
-        // その日の最もいいねが多いエピソードを見つける
-        let topEpisode = null;
-        let maxLikes = 0;
-
-        episodeMap.forEach((data) => {
-          if (data.count > maxLikes) {
-            maxLikes = data.count;
-            topEpisode = data.episode;
-          }
-        });
-
-        return {
-          date,
-          episode: topEpisode,
-          likes: maxLikes,
-        };
-      })
-      .filter(item => item.episode !== null) // エピソードが存在する日のみ
-      .sort((a, b) => b.date.localeCompare(a.date)); // 日付の新しい順
+    // rows を期待するAPI形に整形して返す
+    const tdnHistory = rows.map(r => ({
+      date: r.date,
+      episode: {
+        id: r.episode_id,
+        content: r.content,
+        created_at: r.created_at,
+        user: { name: r.user_name }
+      },
+      likes: r.likes,
+    }));
 
     return NextResponse.json(tdnHistory);
 

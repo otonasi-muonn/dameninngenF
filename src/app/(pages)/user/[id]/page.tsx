@@ -12,7 +12,8 @@ type Props = {
 };
 
 export default async function UserProfilePage({ params }: Props) {
-  const supabase = createServerComponentClient({ cookies });
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
   const {
     data: { session },
   } = await supabase.auth.getSession();

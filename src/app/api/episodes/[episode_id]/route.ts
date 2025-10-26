@@ -22,7 +22,7 @@ export async function DELETE(
   { params }: { params: Promise<{ episode_id: string }> }
 ): Promise<NextResponse> {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient({ cookies: () => cookies() });
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
