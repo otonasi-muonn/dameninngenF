@@ -21,7 +21,7 @@ https://www.figma.com/board/GmU7ZczVLSdMux3xB5BrAs/02-5%E6%9C%9Fphase02_%E3%83%8
 ```
 ## 機能一覧(まとめ)
 - **ログイン画面**
- - あ
+　- あ
 - **ホーム画面**
 - **投稿画面**
 - **TDN画面**
