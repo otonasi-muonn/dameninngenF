@@ -94,8 +94,7 @@ https://www.youtube.com/watch?v=LrC0rg_8XJU
 - `npm run start`: 本番サーバーを起動します。
 - `npm run lint`: ESLintでコードをチェックします。
 
----
-
+```
 ## 📁 ディレクトリ構成
 dame_ningen/
 ├── .github/                        # GitHub関連の設定
@@ -215,3 +214,4 @@ dame_ningen/
 ├── postcss.config.mjs             # PostCSS設定（Tailwind CSS用）
 ├── README.md                      # プロジェクト説明書
 └── tsconfig.json                  # TypeScript設定
+```
