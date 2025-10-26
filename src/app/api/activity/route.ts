@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
+import { getUserActivity } from '@/lib/activity';
 import { unauthorizedResponse, serverErrorResponse } from '@/lib/apiResponse';
 
 // 定数定義
@@ -36,36 +37,8 @@ export async function GET(): Promise<NextResponse> {
     startDate.setDate(startDate.getDate() - (DAYS_TO_SHOW - 1));
     startDate.setHours(0, 0, 0, 0);
 
-    // 投稿データといいねデータを並列取得
-    const [episodes, likes] = await Promise.all([
-      prisma.episode.findMany({
-        where: {
-          user_id: user.id,
-          created_at: { gte: startDate }
-        },
-        select: { created_at: true }
-      }),
-      prisma.like.findMany({
-        where: {
-          user_id: user.id,
-          created_at: { gte: startDate }
-        },
-        select: { created_at: true }
-      })
-    ]);
-
-    // 日付ごとに集計
-    const activityMap = new Map<string, number>();
-
-    // 投稿といいねを一度にカウント
-    [...episodes, ...likes].forEach(item => {
-      const dateKey = getDateKey(item.created_at);
-      activityMap.set(dateKey, (activityMap.get(dateKey) || 0) + 1);
-    });
-
-    // Mapを配列に変換
-    const activities = Array.from(activityMap, ([date, count]) => ({ date, count }));
-
+    // DB側で集計を行う共通ロジックを利用
+    const activities = await getUserActivity(user.id);
     return NextResponse.json({ activities }, { status: 200 });
   } catch (error) {
     console.error('Failed to fetch activity data:', error);
