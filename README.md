@@ -26,7 +26,7 @@ https://www.figma.com/board/GmU7ZczVLSdMux3xB5BrAs/02-5%E6%9C%9Fphase02_%E3%83%8
 - **投稿画面**
 - **TDN画面**
 - **ユーザ一覧画面**
-- **プロフィール画面**
+- **プロフィール画面** 
 ```
 
 ## 🛠️ 技術スタック
