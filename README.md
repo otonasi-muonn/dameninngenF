@@ -6,9 +6,9 @@
 # デプロイリンク
 https://dameninngen-f.vercel.app/
 
-# デモ動画
+# デモ動画リンク
 https://www.youtube.com/watch?v=LrC0rg_8XJU
-# figma
+# figmaリンク
 https://www.figma.com/board/GmU7ZczVLSdMux3xB5BrAs/02-5%E6%9C%9Fphase02_%E3%83%8F%E3%83%83%E3%82%AB%E3%82%BD%E3%83%B3team_f?node-id=0-1&p=f&t=0AvNEqSwtwFAtIUx-0
 ---
 ## ✨ 機能一覧 (MVP)
@@ -16,10 +16,13 @@ https://www.figma.com/board/GmU7ZczVLSdMux3xB5BrAs/02-5%E6%9C%9Fphase02_%E3%83%8
    - あ
  
 - **エピソード投稿機能:** 200文字以内のエピソードを投稿
-　- 
+　- あ
 - **エピソード一覧表示:** 全ユーザーの投稿をタイムライン形式で表示
+　- あ 
 - **いいね機能:** 各投稿に「いいね」を追加・削除
+　- あ 
 - **TDN表示機能:** 直近24時間で最も「いいね」が多かった投稿をトップに表示
+  - あ 
 ---
 ## 機能一覧(まとめ)
 - **ログイン画面**
