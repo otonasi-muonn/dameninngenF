@@ -23,7 +23,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient({ cookies: () => cookies() });
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     const { id: userId } = await params;
 

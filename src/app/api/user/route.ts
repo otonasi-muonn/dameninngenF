@@ -7,7 +7,7 @@ import { calculateRank } from '@/lib/rank';
 // GET /api/user — get current logged in user info
 export async function GET() {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient({ cookies: () => cookies() });
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {

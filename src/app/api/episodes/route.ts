@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 // POST /api/episodes — create new episode (auth required)
 export async function POST(request: NextRequest) {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient({ cookies: () => cookies() });
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user){
@@ -13,9 +13,15 @@ export async function POST(request: NextRequest) {
   }
 
   let content = '';
+  let category = '日常生活';
   try {
     const body = await request.json();
     content = typeof body?.content === 'string' ? body.content.trim() : '';
+    // カテゴリはホワイトリストで受け取る
+    const allowed = ['日常生活', '学校・仕事', '恋愛', '人間関係', 'その他'];
+    if (typeof body?.category === 'string' && allowed.includes(body.category)) {
+      category = body.category;
+    }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
@@ -26,8 +32,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const created = await prisma.episode.create({
-      data: { content, user_id: user.id },
-      select: { id: true, content: true, created_at: true, user_id: true },
+      data: { content, user_id: user.id, category },
+      select: { id: true, content: true, created_at: true, user_id: true, category: true },
     });
     return NextResponse.json(created, { status: 201 });
   } catch (error) {
@@ -46,7 +52,7 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Optional user for likedByMe
-    const supabase = createRouteHandlerClient({ cookies });
+  const supabase = createRouteHandlerClient({ cookies: () => cookies() });
     const { data: { user } } = await supabase.auth.getUser();
     const me = user?.id ?? null;
 
@@ -55,6 +61,7 @@ export async function GET(request: NextRequest) {
       content: string;
       created_at: string | Date;
       user_id: string;
+      category: string;
       user?: { name?: string | null } | null;
       _count: { likes: number };
     };
@@ -69,6 +76,7 @@ export async function GET(request: NextRequest) {
           content: true,
           created_at: true,
           user_id: true,
+          category: true,
           user: { select: { name: true } },
           _count: { select: { likes: true } },
         },
@@ -91,6 +99,7 @@ export async function GET(request: NextRequest) {
       created_at: e.created_at,
       user_id: e.user_id,
       user_name: e.user?.name ?? null,
+      category: e.category,
       likes: e._count.likes,
       likedByMe: me ? likedSet.has(e.id) : false,
     }));
