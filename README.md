@@ -8,16 +8,16 @@ https://dameninngen-f.vercel.app/
 
 # デモ動画
 https://www.youtube.com/watch?v=LrC0rg_8XJU
+# figma
+https://www.figma.com/board/GmU7ZczVLSdMux3xB5BrAs/02-5%E6%9C%9Fphase02_%E3%83%8F%E3%83%83%E3%82%AB%E3%82%BD%E3%83%B3team_f?node-id=0-1&p=f&t=0AvNEqSwtwFAtIUx-0
 ---
-
 ## ✨ 機能一覧 (MVP)
-
 - **ユーザー認証機能:** メールアドレスとパスワードによる登録・ログイン
+   - あ 
 - **エピソード投稿機能:** 200文字以内のエピソードを投稿
 - **エピソード一覧表示:** 全ユーザーの投稿をタイムライン形式で表示
 - **いいね機能:** 各投稿に「いいね」を追加・削除
 - **TDN表示機能:** 直近24時間で最も「いいね」が多かった投稿をトップに表示
-
 ---
 ## 機能一覧(まとめ)
 - **ログイン画面**
