@@ -1,8 +1,13 @@
 
 # 今日のダメ人間度管理アプリ (仮)
 
-ユーザーが自身の「ダメ人間エピソード」を投稿し、他者からの「いいね」によってランキング化される育成系Webアプリケーションです。日常のちょっとした失敗や『ダメ』な出来事を、エンターテイメントとして共有し、共感し合う文化を作ることを目指します。
+ユーザーが自身の「ダメ人間エピソード」を投稿し、他者からの「いいね」によってランキング化されるWebアプリケーションです。日常のちょっとした失敗や『ダメ』な出来事を、エンターテイメントとして共有し、共感し合う文化を作ることを目指します。
 
+# デプロイリンク
+https://dameninngen-f.vercel.app/
+
+# デモ動画
+https://www.youtube.com/watch?v=LrC0rg_8XJU
 ---
 
 ## ✨ 機能一覧 (MVP)
@@ -92,14 +97,121 @@
 ---
 
 ## 📁 ディレクトリ構成
-/
-├── app/                  \# アプリケーションの心臓部
-│   ├── \_components/      \# 共通UIコンポーネント
-│   ├── (pages)/          \# UIページ
-│   └── api/              \# APIロジック
-├── lib/                  \# DB接続など共通のヘルパー関数
-├── prisma/               \# Prismaのスキーマ定義
-├── public/               \# 静的ファイル
-├── scripts/              \# 開発用スクリプト
-├── docker-compose.yml    \# Dockerの構成ファイル
-└── Dockerfile            \# Dockerイメージの設計図
+dame_ningen/
+├── .github/                        # GitHub関連の設定
+│   ├── CONTRIBUTING.md            # コントリビューションガイド
+│   ├── pull_request_template.md  # PRテンプレート
+│   └── ISSUE_TEMPLATE/            # Issue用テンプレート
+│       ├── bug.yml                # バグ報告用
+│       └── feature.yml            # 機能リクエスト用
+│
+├── .next/                         # Next.jsビルド成果物（自動生成）
+│
+├── docs/                          # プロジェクトドキュメント
+│
+├── node_modules/                  # npmパッケージ（自動生成）
+│
+├── prisma/                        # データベース設定
+│   └── schema.prisma              # Prismaスキーマ定義（User, Episode, Like, Comment等）
+│
+├── public/                        # 静的ファイル（画像、アイコン等）
+│   ├── next.svg                   # Next.jsロゴ
+│   ├── vercel.svg                 # Vercelロゴ
+│   └── *.svg                      # その他のSVGアイコン
+│
+├── scripts/                       # 開発・デプロイ用スクリプト
+│
+├── src/                           # ソースコードのメインディレクトリ
+│   ├── app/                       # Next.js App Router（アプリケーションの心臓部）
+│   │   ├── page.tsx               # ホームページ（診断機能のメイン画面）
+│   │   ├── layout.tsx             # 全ページ共通のレイアウト
+│   │   ├── globals.css            # グローバルスタイル
+│   │   │
+│   │   ├── (pages)/               # ページコンポーネント（パスに影響しないルートグループ）
+│   │   │   ├── episodes/          # 投稿一覧・詳細ページ
+│   │   │   │   └── page.tsx       # /episodes - 全ユーザーの投稿一覧
+│   │   │   ├── login/             # ログインページ
+│   │   │   │   └── page.tsx       # /login - ログインフォーム
+│   │   │   ├── register/          # 新規登録ページ
+│   │   │   │   └── page.tsx       # /register - ユーザー登録フォーム
+│   │   │   ├── profile/           # プロフィールページ
+│   │   │   │   └── page.tsx       # /profile - 自分のプロフィール表示・編集
+│   │   │   ├── tdn/               # TDN（ダメ人間度）関連ページ
+│   │   │   │   └── page.tsx       # /tdn - TDN詳細情報
+│   │   │   └── user/              # ユーザー関連ページ
+│   │   │       ├── page.tsx       # /user - 全ユーザー一覧
+│   │   │       └── [id]/          # 動的ルート
+│   │   │           └── page.tsx   # /user/[id] - 特定ユーザーのプロフィール
+│   │   │
+│   │   └── api/                   # APIエンドポイント（サーバーサイドロジック）
+│   │       ├── activity/          # アクティビティ関連API
+│   │       │   └── route.ts       # GET /api/activity - 自分のアクティビティデータ取得
+│   │       ├── auth/              # 認証関連API
+│   │       │   ├── login/         
+│   │       │   │   └── route.ts   # POST /api/auth/login - ログイン処理
+│   │       │   └── register/
+│   │       │       └── route.ts   # POST /api/auth/register - 新規ユーザー登録
+│   │       ├── comments/          # コメント関連API
+│   │       │   └── [comment_id]/
+│   │       │       └── route.ts   # DELETE /api/comments/[id] - コメント削除
+│   │       ├── diagnose/          # 診断関連API
+│   │       │   └── route.ts       # POST /api/diagnose - AI診断実行
+│   │       ├── diagnosis-history/ # 診断履歴関連API
+│   │       │   └── route.ts       # GET /api/diagnosis-history - 診断履歴取得
+│   │       ├── episodes/          # 投稿関連API
+│   │       │   ├── route.ts       # GET/POST /api/episodes - 投稿一覧取得・新規投稿
+│   │       │   └── [episode_id]/  
+│   │       │       ├── route.ts   # DELETE /api/episodes/[id] - 投稿削除
+│   │       │       └── comments/
+│   │       │           └── route.ts # GET/POST /api/episodes/[id]/comments - コメント取得・投稿
+│   │       ├── follow-count/      # フォロー数関連API
+│   │       │   └── route.ts       # POST /api/follow-count - フォロー・アンフォロー
+│   │       ├── profile/           # プロフィール関連API
+│   │       │   └── route.ts       # GET/POST /api/profile - プロフィール取得・更新
+│   │       ├── tdn/               # TDN関連API
+│   │       │   ├── route.ts       # GET /api/tdn - TDN情報取得
+│   │       │   └── history/
+│   │       │       └── route.ts   # GET /api/tdn/history - TDN履歴取得
+│   │       └── user/              # ユーザー関連API
+│   │           └── [id]/
+│   │               ├── route.ts   # GET /api/user/[id] - 特定ユーザー情報取得
+│   │               └── activity/
+│   │                   └── route.ts # GET /api/user/[id]/activity - 特定ユーザーのアクティビティ取得
+│   │
+│   ├── components/                # 再利用可能なUIコンポーネント
+│   │   ├── layout/                # レイアウト用コンポーネント
+│   │   │   ├── Header.tsx         # ヘッダー（ナビゲーション）
+│   │   │   └── Footer.tsx         # フッター
+│   │   └── ui/                    # UI部品
+│   │       ├── ActivityCalendar.tsx      # GitHubスタイルのアクティビティカレンダー
+│   │       ├── CommentSection.tsx        # コメント表示・投稿セクション
+│   │       ├── DameningenDiagnosis.tsx   # ダメ人間度診断フォーム
+│   │       ├── DiagnosisHistory.tsx      # 診断履歴表示コンポーネント
+│   │       ├── EpisodeSearchList.tsx     # エピソード検索・一覧表示
+│   │       ├── FollowButton.tsx          # フォロー/アンフォローボタン
+│   │       ├── LikeButton.tsx            # いいねボタン
+│   │       └── PostForm.tsx              # 投稿フォーム
+│   │
+│   ├── lib/                       # 共通ヘルパー関数・ユーティリティ
+│   │   ├── apiResponse.ts         # 統一されたAPIレスポンス生成関数
+│   │   ├── auth.ts                # 認証関連ヘルパー（ユーザー取得、権限チェック等）
+│   │   ├── constants.ts           # アプリケーション全体の定数定義
+│   │   ├── prisma.ts              # Prismaクライアントのシングルトンインスタンス
+│   │   ├── rank.ts                # ランク計算ロジック（いいね数に基づく）
+│   │   └── rateLimit.ts           # レート制限ロジック（DoS攻撃対策）
+│   │
+│   └── utils/                     # ユーティリティ関数
+│       └── date.ts                # 日付フォーマット関数
+│
+├── .dockerignore                  # Dockerビルド時の除外ファイル指定
+├── .env                           # 環境変数（DB接続情報、APIキー等）※gitignore対象
+├── .gitignore                     # Git管理除外ファイル指定
+├── docker-compose.yml             # Docker Compose設定（開発環境構築用）
+├── Dockerfile                     # Dockerイメージビルド設定
+├── eslint.config.mjs              # ESLint設定（コード品質チェック）
+├── next-env.d.ts                  # Next.js型定義（自動生成）
+├── next.config.ts                 # Next.js設定ファイル
+├── package.json                   # npmパッケージ・スクリプト定義
+├── postcss.config.mjs             # PostCSS設定（Tailwind CSS用）
+├── README.md                      # プロジェクト説明書
+└── tsconfig.json                  # TypeScript設定
